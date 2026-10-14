@@ -29,6 +29,10 @@ Please make sure to update tests as appropriate.
 
 Jace Baptista-Allan (jacedba), Joonho Choi (joonhoc7), Reed Dolese (doleser), Daniel Park (dpark005), Owen Jennings (owenjenn), Johnny Nguyen (dtn24)
 
+## Project Proposal Link 
+
+https://docs.google.com/document/d/1Iv4nRQnxfLWo1CbQmWadlzeJVDBckgoaqx1jzAAFiJE/edit?tab=t.0#heading=h.frebs5d4hw1a
+
 ## License
 
 [MIT](https://choosealicense.com/licenses/mit/)
