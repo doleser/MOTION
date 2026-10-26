@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Motion",
-    "slug": "motion",
+    "slug": "motion-uw",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -20,6 +20,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "890495ab-58f9-45c9-8712-e932419bf016"
+      }
+    },
+    "owner": "project-motion"
   }
 }
