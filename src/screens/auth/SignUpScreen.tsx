@@ -1,18 +1,17 @@
+import {useIsFocused} from '@react-navigation/native';
+import {StatusBar} from 'expo-status-bar';
 import {useState} from 'react';
 
-import {AppButton} from '../../components/AppButton';
-import {Checkbox} from '../../components/Checkbox';
-import {ErrorMessage} from '../../components/ErrorMessage';
-import {Screen} from '../../components/Screen';
-import {TextField} from '../../components/TextField';
 import type {AuthScreenProps} from '../../navigation/types';
 import {getEmailError, getPasswordError, isEmailAvailable} from '../../services/auth';
 import {getErrorMessage} from '../../services/errors';
 import {useOnboardingDraft} from '../onboarding/OnboardingDraftContext';
+import {SignUpScreenView} from './SignUpScreenView';
 
 /**
  * First sign-up step. Checks the answers but saves nothing: the account is
- * created at the end of sign-up (HomeCourt's Finish).
+ * created at the end of sign-up (HomeCourt's Finish). SignUpScreenView draws
+ * the screen.
  */
 export function SignUpScreen({navigation, route}: AuthScreenProps<'SignUp'>) {
   const {draft, updateDraft} = useOnboardingDraft();
@@ -24,6 +23,9 @@ export function SignUpScreen({navigation, route}: AuthScreenProps<'SignUp'>) {
     route.params?.errorMessage ?? null,
   );
   const [isChecking, setIsChecking] = useState(false);
+  // Screens stay mounted under the ones opened on top of them, so only set
+  // the status bar while this screen is the one showing.
+  const isFocused = useIsFocused();
 
   // HomeCourt sends the user back here if the email was taken in the
   // meantime. When new params arrive, show their message.
@@ -37,7 +39,7 @@ export function SignUpScreen({navigation, route}: AuthScreenProps<'SignUp'>) {
 
   const canContinue = email.length > 0 && password.length > 0 && isAdult;
 
-  async function handleNext() {
+  async function handleContinue() {
     // Instant checks first; these don't need the server.
     const formatError = getEmailError(email) ?? getPasswordError(password);
     if (formatError) {
@@ -62,36 +64,30 @@ export function SignUpScreen({navigation, route}: AuthScreenProps<'SignUp'>) {
     }
   }
 
+  // Login is always underneath (it's the first screen), so go back to it
+  // rather than opening a second copy.
+  function goToLogin() {
+    navigation.popTo('Login');
+  }
+
   return (
-    <Screen title="Create account">
-      <TextField
-        label="Email"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        autoComplete="email"
-        keyboardType="email-address"
+    <>
+      {/* White clock and battery on the dark screen. */}
+      {isFocused ? <StatusBar style="light" /> : null}
+      <SignUpScreenView
+        email={email}
+        password={password}
+        isAdult={isAdult}
+        onChangeEmail={setEmail}
+        onChangePassword={setPassword}
+        onChangeIsAdult={setIsAdult}
+        error={error}
+        canContinue={canContinue}
+        isChecking={isChecking}
+        onContinue={handleContinue}
+        onLogIn={goToLogin}
+        onBack={goToLogin}
       />
-      <TextField
-        label="Password"
-        value={password}
-        onChangeText={setPassword}
-        autoComplete="new-password"
-        secureTextEntry
-      />
-      <Checkbox label="I'm 18 or older" checked={isAdult} onChange={setIsAdult} />
-      <ErrorMessage message={error} />
-      <AppButton
-        label="Next"
-        onPress={handleNext}
-        disabled={!canContinue}
-        loading={isChecking}
-      />
-      <AppButton
-        label="I already have an account"
-        variant="secondary"
-        onPress={() => navigation.replace('Login')}
-      />
-    </Screen>
+    </>
   );
 }

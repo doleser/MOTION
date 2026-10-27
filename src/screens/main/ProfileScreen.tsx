@@ -19,7 +19,7 @@ export function ProfileScreen() {
     setIsSigningOut(true);
     try {
       await signOut();
-      // The root switches back to the Welcome screen on its own.
+      // The root switches back to the Login screen on its own.
     } catch (e) {
       setError(getErrorMessage(e));
       setIsSigningOut(false);

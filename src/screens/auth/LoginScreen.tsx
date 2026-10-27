@@ -1,18 +1,24 @@
+import {useIsFocused} from '@react-navigation/native';
+import {StatusBar} from 'expo-status-bar';
 import {useState} from 'react';
 
-import {AppButton} from '../../components/AppButton';
-import {ErrorMessage} from '../../components/ErrorMessage';
-import {Screen} from '../../components/Screen';
-import {TextField} from '../../components/TextField';
 import type {AuthScreenProps} from '../../navigation/types';
 import {signInWithPassword} from '../../services/auth';
 import {getErrorMessage} from '../../services/errors';
+import {LoginScreenView} from './LoginScreenView';
 
+/**
+ * The first screen a signed-out user sees. Holds the form state and signs in;
+ * LoginScreenView draws the screen.
+ */
 export function LoginScreen({navigation}: AuthScreenProps<'Login'>) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  // Screens stay mounted under the ones opened on top of them, so only set
+  // the status bar while this screen is the one showing.
+  const isFocused = useIsFocused();
 
   const canSubmit = email.length > 0 && password.length > 0;
 
@@ -21,7 +27,7 @@ export function LoginScreen({navigation}: AuthScreenProps<'Login'>) {
     setIsSubmitting(true);
     try {
       await signInWithPassword({email, password});
-      // The root switches to Onboarding or Main on its own.
+      // Signing in makes the root switch to the main tabs on its own.
     } catch (e) {
       setError(getErrorMessage(e));
       setIsSubmitting(false);
@@ -29,34 +35,21 @@ export function LoginScreen({navigation}: AuthScreenProps<'Login'>) {
   }
 
   return (
-    <Screen title="Log in">
-      <TextField
-        label="Email"
-        value={email}
-        onChangeText={setEmail}
-        autoCapitalize="none"
-        autoComplete="email"
-        keyboardType="email-address"
+    <>
+      {/* White clock and battery on the dark screen. */}
+      {isFocused ? <StatusBar style="light" /> : null}
+      <LoginScreenView
+        email={email}
+        password={password}
+        onChangeEmail={setEmail}
+        onChangePassword={setPassword}
+        error={error}
+        canSubmit={canSubmit}
+        isSubmitting={isSubmitting}
+        onLogin={handleLogin}
+        // Opens on top, so Back (or a swipe) returns here.
+        onSignUp={() => navigation.navigate('SignUp')}
       />
-      <TextField
-        label="Password"
-        value={password}
-        onChangeText={setPassword}
-        autoComplete="current-password"
-        secureTextEntry
-      />
-      <ErrorMessage message={error} />
-      <AppButton
-        label="Log in"
-        onPress={handleLogin}
-        disabled={!canSubmit}
-        loading={isSubmitting}
-      />
-      <AppButton
-        label="Create an account instead"
-        variant="secondary"
-        onPress={() => navigation.replace('SignUp')}
-      />
-    </Screen>
+    </>
   );
 }
