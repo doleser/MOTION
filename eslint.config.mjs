@@ -23,6 +23,12 @@ export default defineConfig([
 
   ...tseslint.configs.recommended,
 
+    {
+    rules: {
+      "@typescript-eslint/no-namespace": "off",
+    },
+  },
+
   pluginReact.configs.flat.recommended,
 
   // React 17+ uses the automatic JSX transform.
