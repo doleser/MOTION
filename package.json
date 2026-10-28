@@ -1,4 +1,3 @@
-
 {
   "name": "motion",
   "version": "1.0.0",
@@ -11,7 +10,8 @@
     "web": "expo start --web",
     "align": "npm install && cd ios && pod install && cd ..",
     "lint": "expo lint",
-    "lint:fix": "eslint . --fix"
+    "lint:fix": "eslint . --fix",
+    "test": "jest"
   },
   "dependencies": {
     "@react-navigation/bottom-tabs": "^7.21.0",
@@ -32,11 +32,16 @@
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-native": "^5.0.0",
     "globals": "^17.13.0",
+    "@types/jest": "30.0.0",
     "jest": "^30.5.2",
+    "jest-expo": "~58.0.12",
     "typescript": "~6.0.3",
     "typescript-eslint": "^8.72.0"
   },
   "overrides": {
     "zod": "^4.6.6"
+  },
+  "jest": {
+    "preset": "jest-expo"
   }
 }
