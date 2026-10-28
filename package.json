@@ -1,7 +1,18 @@
 {
   "name": "motion",
   "version": "1.0.0",
+  "private": true,
   "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "align": "npm install && cd ios && pod install && cd ..",
+    "lint": "expo lint",
+    "lint:fix": "eslint . --fix",
+    "test": "jest"
+  },
   "dependencies": {
     "@expo-google-fonts/anton": "^0.4.2",
     "@expo-google-fonts/inter": "^0.4.2",
@@ -18,17 +29,23 @@
     "react-native-svg": "15.16.0"
   },
   "devDependencies": {
+    "@eslint/js": "^8.57.1",
     "@types/react": "~19.3.0",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~58.0.4",
-    "typescript": "~6.0.3"
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-native": "^5.0.0",
+    "globals": "^17.13.0",
+    "@types/jest": "30.0.0",
+    "jest": "^30.5.2",
+    "jest-expo": "~58.0.12",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.0"
   },
-  "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
-    "lint": "expo lint"
+  "overrides": {
+    "zod": "^4.6.6"
   },
-  "private": true
+  "jest": {
+    "preset": "jest-expo"
+  }
 }

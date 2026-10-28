@@ -1,0 +1,65 @@
+# CI for Motion. Two jobs run in parallel:
+#   app      - lint, type check, and Jest tests for the Expo app
+#   database - builds a throwaway local Supabase from every migration + seed,
+#              then runs the pgTAP tests in supabase/tests/database/
+# The database job never touches the hosted Supabase project, so no secrets are needed.
+name: CI
+
+on:
+  push:
+    branches: ['**']
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+# Read-only token: CI can check out the code but can't push.
+permissions:
+  contents: read
+
+# A new push to the same branch cancels the run that's still going.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  app:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Type check
+        run: npx tsc --noEmit
+
+      # Skipped until Jest is set up and package.json has a "test" script.
+      - name: Unit tests
+        run: npm run test --if-present
+
+  database:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      # Same CLI version used locally, so CI and laptops build the same database.
+      - uses: supabase/setup-cli@v1
+        with:
+          version: 2.122.0
+
+      # Starts only Postgres, applies every migration in order, then seed.sql.
+      # A migration that doesn't apply fails the build here.
+      - name: Build database from migrations
+        run: supabase db start
+
+      - name: pgTAP tests
+        run: supabase test db
