@@ -10,7 +10,7 @@ const RootStack = createNativeStackNavigator<RootStackParamList>();
 
 /**
  * Shows exactly one group at a time:
- *   signed out -> AuthStack (Welcome, Login, and the sign-up flow)
+ *   signed out -> AuthStack (Login, and the sign-up flow)
  *   signed in  -> MainTabs
  *
  * Accounts are created together with their profile, so every signed-in user

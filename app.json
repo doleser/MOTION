@@ -26,6 +26,9 @@
         "projectId": "890495ab-58f9-45c9-8712-e932419bf016"
       }
     },
-    "owner": "project-motion"
+    "owner": "project-motion",
+    "plugins": [
+      "expo-font"
+    ]
   }
 }
