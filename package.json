@@ -1,7 +1,18 @@
+
 {
   "name": "motion",
   "version": "1.0.0",
+  "private": true,
   "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "align": "npm install && cd ios && pod install && cd ..",
+    "lint": "expo lint",
+    "lint:fix": "eslint . --fix"
+  },
   "dependencies": {
     "@react-navigation/bottom-tabs": "^7.21.0",
     "@react-navigation/native": "^7.5.1",
@@ -14,17 +25,18 @@
     "react-native-screens": "~4.30.0"
   },
   "devDependencies": {
+    "@eslint/js": "^8.57.1",
     "@types/react": "~19.3.0",
     "eslint": "^9.0.0",
     "eslint-config-expo": "~58.0.4",
-    "typescript": "~6.0.3"
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-native": "^5.0.0",
+    "globals": "^17.13.0",
+    "jest": "^30.5.2",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.72.0"
   },
-  "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
-    "lint": "expo lint"
-  },
-  "private": true
+  "overrides": {
+    "zod": "^4.6.6"
+  }
 }
