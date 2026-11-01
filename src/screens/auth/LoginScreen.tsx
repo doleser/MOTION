@@ -8,7 +8,7 @@ import {getErrorMessage} from '../../services/errors';
 import {LoginScreenView} from './LoginScreenView';
 
 /**
- * The first screen a signed-out user sees. Holds the form state and signs in;
+ * Log in, opened from Welcome. Holds the form state and signs in;
  * LoginScreenView draws the screen.
  */
 export function LoginScreen({navigation}: AuthScreenProps<'Login'>) {
@@ -47,8 +47,11 @@ export function LoginScreen({navigation}: AuthScreenProps<'Login'>) {
         canSubmit={canSubmit}
         isSubmitting={isSubmitting}
         onLogin={handleLogin}
-        // Opens on top, so Back (or a swipe) returns here.
-        onSignUp={() => navigation.navigate('SignUp')}
+        // Swaps this screen for Sign up, so Back from Sign up returns to
+        // Welcome, not here.
+        onSignUp={() => navigation.replace('SignUp')}
+        // Welcome is always underneath.
+        onBack={() => navigation.goBack()}
       />
     </>
   );

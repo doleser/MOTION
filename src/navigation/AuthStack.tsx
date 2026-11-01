@@ -3,6 +3,7 @@ import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {colors} from '../components/theme';
 import {LoginScreen} from '../screens/auth/LoginScreen';
 import {SignUpScreen} from '../screens/auth/SignUpScreen';
+import {WelcomeScreen} from '../screens/auth/WelcomeScreen';
 import {ChooseHandleScreen} from '../screens/onboarding/ChooseHandleScreen';
 import {HomeCourtScreen} from '../screens/onboarding/HomeCourtScreen';
 import {OnboardingDraftProvider} from '../screens/onboarding/OnboardingDraftContext';
@@ -15,19 +16,20 @@ import type {AuthStackParamList} from './types';
 const Stack = createNativeStackNavigator<AuthStackParamList>();
 
 /**
- * Everything a signed-out user can see: Login (the first screen) and the
- * whole sign-up flow (SignUp through StartingElo). Back works on every
- * sign-up step.
+ * Everything a signed-out user can see: Welcome (the first screen), Login,
+ * and the whole sign-up flow (SignUp through StartingElo). Back works on
+ * every step; from Login or SignUp it returns to Welcome.
  */
 export function AuthStack() {
   return (
     // The sign-up draft lives as long as the user is signed out.
     <OnboardingDraftProvider>
       <Stack.Navigator
-        initialRouteName="Login"
+        initialRouteName="Welcome"
         screenOptions={{headerTintColor: colors.primary}}>
-        {/* Login and SignUp draw their own top area (Figma design), so the
-            default header is hidden on both. */}
+        {/* Welcome, Login, and SignUp draw their own top area (Figma design),
+            so the default header is hidden on all three. */}
+        <Stack.Screen name="Welcome" component={WelcomeScreen} options={{headerShown: false}} />
         <Stack.Screen name="Login" component={LoginScreen} options={{headerShown: false}} />
 
         {/* Sign-up flow, in order */}

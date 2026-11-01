@@ -64,10 +64,10 @@ export function SignUpScreen({navigation, route}: AuthScreenProps<'SignUp'>) {
     }
   }
 
-  // Login is always underneath (it's the first screen), so go back to it
-  // rather than opening a second copy.
+  // Swaps this screen for Login instead of stacking it on top, so Back from
+  // Login still returns to Welcome and the two screens never pile up.
   function goToLogin() {
-    navigation.popTo('Login');
+    navigation.replace('Login');
   }
 
   return (
@@ -86,7 +86,8 @@ export function SignUpScreen({navigation, route}: AuthScreenProps<'SignUp'>) {
         isChecking={isChecking}
         onContinue={handleContinue}
         onLogIn={goToLogin}
-        onBack={goToLogin}
+        // Welcome is always underneath.
+        onBack={() => navigation.goBack()}
       />
     </>
   );

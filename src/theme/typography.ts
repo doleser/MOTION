@@ -19,6 +19,12 @@ export const fonts = {
 
 export const typography = {
   /**
+   * Big "MOTION" logo on the Welcome screen. Figma: Anton 88/104 (typed
+   * directly, not a text style). No lineHeight, for the same reason as
+   * `display` below.
+   */
+  hero: {fontFamily: fonts.anton, fontSize: 88},
+  /**
    * "MOTION" logo. Figma: MOTION / display (Anton 52/60).
    * No lineHeight on purpose: Figma's 60 is shorter than Anton needs (~78),
    * and iOS cuts the extra off the top of the letters. The logo is one line,
