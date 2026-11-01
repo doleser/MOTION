@@ -1,12 +1,17 @@
 /**
  * Holds sign-up answers in memory until the last step saves them.
  *
- * Nothing is saved while the user moves through sign-up: HomeCourt's Finish
- * sends everything (account + profile) in one createAccount call. If the user
+ * Nothing is saved while the user moves through sign-up: StartingElo's
+ * "Create account" sends everything (account + profile) in one createAccount
+ * call. If the user
  * closes the app midway, the draft is gone and nothing was created.
  *
- * The provider wraps the signed-out stack (AuthStack). Signing in removes
- * that stack, which also clears the draft, including the password.
+ * The provider wraps the signed-out stack (AuthStack), so every sign-up
+ * screen shares it and going back keeps earlier answers. Signing in removes
+ * that stack, which also clears the draft.
+ *
+ * The password lives ONLY here, in memory: never write the draft to storage
+ * and never log it.
  */
 import {
   createContext,
@@ -25,11 +30,13 @@ export interface OnboardingDraft {
   email?: string;
   password?: string;
   confirmedAdult?: boolean;
-  // From the onboarding screens
+  // From ChooseHandle and ProfileDetails
   username?: string;
   position?: string;
   heightCm?: number;
   tags?: string[];
+  preferredCourtIds?: number[];
+  // From Experience
   level?: SkillLevel;
 }
 

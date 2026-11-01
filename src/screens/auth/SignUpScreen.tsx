@@ -10,7 +10,7 @@ import {SignUpScreenView} from './SignUpScreenView';
 
 /**
  * First sign-up step. Checks the answers but saves nothing: the account is
- * created at the end of sign-up (HomeCourt's Finish). SignUpScreenView draws
+ * created at the end of sign-up (StartingElo's Create account). SignUpScreenView draws
  * the screen.
  */
 export function SignUpScreen({navigation, route}: AuthScreenProps<'SignUp'>) {
@@ -27,7 +27,7 @@ export function SignUpScreen({navigation, route}: AuthScreenProps<'SignUp'>) {
   // the status bar while this screen is the one showing.
   const isFocused = useIsFocused();
 
-  // HomeCourt sends the user back here if the email was taken in the
+  // StartingElo sends the user back here if the email was taken in the
   // meantime. When new params arrive, show their message.
   // (React's recommended way to update state from changed props:
   // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)

@@ -169,6 +169,13 @@ export function stubInsertUser(email: string, password: string): AuthUser {
   return {id: user.id, email: user.email};
 }
 
+/** Signs in a user that was just created (used by createAccount). */
+export function stubSignIn(user: AuthUser): Session {
+  const session: Session = {user};
+  setSession(session);
+  return session;
+}
+
 /** Lets the profile stub read the signed-in user without a fake delay. */
 export function peekSession(): Session | null {
   return currentSession;

@@ -31,7 +31,7 @@ interface SignUpScreenViewProps {
  * Two changes from Figma, both agreed by the team:
  * - An "I'm 18 or older" checkbox instead of the "DATE OF BIRTH" field.
  * - The main button says "CONTINUE", not "CREATE ACCOUNT": the account is
- *   only created at the end of sign-up (HomeCourt's Finish).
+ *   only created at the end of sign-up (StartingElo's Create account).
  *
  * UI only: it shows what it's given and reports taps. SignUpScreen.tsx holds
  * the state and does the checks.

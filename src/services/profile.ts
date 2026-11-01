@@ -21,7 +21,8 @@ export interface Profile {
   position?: string;
   heightCm?: number;
   tags?: string[];
-  homeCourtId?: number;
+  /** Courts the player usually plays at (ids from the courts service). */
+  preferredCourtIds?: number[];
 }
 
 /** The profile answers collected during sign-up. */
@@ -31,18 +32,23 @@ export interface CreateProfileInput {
   position?: string;
   heightCm?: number;
   tags?: string[];
-  homeCourtId?: number;
+  preferredCourtIds?: number[];
 }
 
 /** Same as the `elo` column default in the database. */
 const DEFAULT_ELO = 1200;
 
-// TODO(team): Finalize the level -> starting Elo mapping. The proposal says
-// Beginner 400 / Intermediate 800 / Advanced 1200, but also "clamp to
-// 900-1500", which contradict each other. Until decided, everyone gets 1200.
+/**
+ * Starting Elo for each self-assessed level. The ONE place this mapping
+ * lives: the StartingElo preview and the createAccount stub both read it.
+ *
+ * TODO(team): not final. The design doc says 400 / 800 / 1200 but also
+ * "clamp to 900-1500", which contradict each other. The real number will
+ * come from the backend.
+ */
 export const STARTING_ELO_BY_LEVEL: Readonly<Record<SkillLevel, number>> = {
-  beginner: 1200,
-  intermediate: 1200,
+  beginner: 400,
+  intermediate: 800,
   advanced: 1200,
   skipped: 1200,
 };

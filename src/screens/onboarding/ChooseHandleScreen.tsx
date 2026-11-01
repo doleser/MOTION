@@ -19,7 +19,7 @@ export function ChooseHandleScreen({
   );
   const [isChecking, setIsChecking] = useState(false);
 
-  // HomeCourt sends the user back here with a message if their username was
+  // StartingElo sends the user back here with a message if their username was
   // taken in the meantime. When new params arrive, show their message.
   // (React's recommended way to update state from changed props:
   // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)

@@ -2,7 +2,7 @@
  * App-wide auth state: who is signed in and their profile.
  *
  * Wrap the app in <AuthProvider>, then read the state anywhere with
- * `useAuth()`. The root navigator uses it to pick Auth, Onboarding, or Main.
+ * `useAuth()`. The root navigator uses it to pick Auth, Main, or FinishSetup.
  *
  * This file talks only to the auth and profile services, never to Supabase,
  * so it stays the same when the stubs are replaced.
@@ -30,6 +30,16 @@ export interface AuthState {
   profile: Profile | null;
   /** Re-fetches the profile, e.g. after onboarding saves it. */
   refreshProfile: () => Promise<void>;
+  /**
+   * True while the last sign-up step is finishing. The root keeps showing
+   * the sign-up screens, even once signed in, until this goes back to false.
+   */
+  isFinishingSignUp: boolean;
+  /**
+   * StartingElo turns this on before creating the account, and off once the
+   * location question is answered (or creating the account failed).
+   */
+  setFinishingSignUp: (finishing: boolean) => void;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -38,6 +48,7 @@ export function AuthProvider({children}: {children: ReactNode}) {
   const [isStarting, setIsStarting] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [isFinishingSignUp, setFinishingSignUp] = useState(false);
 
   // The user we're currently showing. A profile request that finishes after
   // that user signed out is ignored, so we never show someone else's profile.
@@ -93,8 +104,10 @@ export function AuthProvider({children}: {children: ReactNode}) {
       session,
       profile,
       refreshProfile,
+      isFinishingSignUp,
+      setFinishingSignUp,
     }),
-    [isStarting, session, profile, refreshProfile],
+    [isStarting, session, profile, refreshProfile, isFinishingSignUp],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

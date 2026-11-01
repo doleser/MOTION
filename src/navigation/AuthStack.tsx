@@ -5,11 +5,9 @@ import {LoginScreen} from '../screens/auth/LoginScreen';
 import {SignUpScreen} from '../screens/auth/SignUpScreen';
 import {WelcomeScreen} from '../screens/auth/WelcomeScreen';
 import {ChooseHandleScreen} from '../screens/onboarding/ChooseHandleScreen';
-import {HomeCourtScreen} from '../screens/onboarding/HomeCourtScreen';
+import {ExperienceScreen} from '../screens/onboarding/ExperienceScreen';
 import {OnboardingDraftProvider} from '../screens/onboarding/OnboardingDraftContext';
-import {PermissionsScreen} from '../screens/onboarding/PermissionsScreen';
 import {ProfileDetailsScreen} from '../screens/onboarding/ProfileDetailsScreen';
-import {SelfAssessmentScreen} from '../screens/onboarding/SelfAssessmentScreen';
 import {StartingEloScreen} from '../screens/onboarding/StartingEloScreen';
 import type {AuthStackParamList} from './types';
 
@@ -17,8 +15,9 @@ const Stack = createNativeStackNavigator<AuthStackParamList>();
 
 /**
  * Everything a signed-out user can see: Welcome (the first screen), Login,
- * and the whole sign-up flow (SignUp through StartingElo). Back works on
- * every step; from Login or SignUp it returns to Welcome.
+ * and the whole sign-up flow: SignUp -> ChooseHandle -> ProfileDetails ->
+ * Experience -> StartingElo. Back works on every step; from Login or SignUp
+ * it returns to Welcome.
  */
 export function AuthStack() {
   return (
@@ -45,25 +44,15 @@ export function AuthStack() {
           options={{title: 'Details'}}
         />
         <Stack.Screen
-          name="SelfAssessment"
-          component={SelfAssessmentScreen}
-          options={{title: 'Skill level'}}
+          name="Experience"
+          component={ExperienceScreen}
+          options={{title: 'Experience'}}
         />
-        <Stack.Screen
-          name="Permissions"
-          component={PermissionsScreen}
-          options={{title: 'Permissions'}}
-        />
-        <Stack.Screen
-          name="HomeCourt"
-          component={HomeCourtScreen}
-          options={{title: 'Home court'}}
-        />
+        {/* Back still works here: nothing is saved until "Create account". */}
         <Stack.Screen
           name="StartingElo"
           component={StartingEloScreen}
-          // The account is already created: no going back into sign-up.
-          options={{title: 'Starting Elo', headerBackVisible: false, gestureEnabled: false}}
+          options={{title: 'Starting Elo'}}
         />
       </Stack.Navigator>
     </OnboardingDraftProvider>

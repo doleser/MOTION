@@ -1,4 +1,4 @@
-import {getUsernameError} from './profile';
+import {getUsernameError, STARTING_ELO_BY_LEVEL} from './profile';
 
 describe('getUsernameError', () => {
   it('accepts 3 to 16 letters, numbers, or underscores', () => {
@@ -17,5 +17,16 @@ describe('getUsernameError', () => {
     expect(getUsernameError('bad-name')).toBe(
       'Use 3-16 letters, numbers, or underscores.',
     );
+  });
+});
+
+describe('STARTING_ELO_BY_LEVEL', () => {
+  it('gives every level a starting Elo, with skipped matching advanced', () => {
+    expect(STARTING_ELO_BY_LEVEL).toEqual({
+      beginner: 400,
+      intermediate: 800,
+      advanced: 1200,
+      skipped: 1200,
+    });
   });
 });
