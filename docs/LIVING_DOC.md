@@ -18,7 +18,12 @@
 - Figma: <https://www.figma.com/design/jTN8WKsfe4dxQ8Dpm8BvE6/MOTION-%E2%80%94-UI-DEMO?node-id=2-241&t=VWUW4ske8aWmPs3B-0>
 - Other links (to be added)
 
-**Communication:** Text message, github, Google Drive, Email, in person
+**Communication Policy:**
+
+- Casual questions go in the team group text, tasks and bugs are GitHub Issues, and PR messages hold code discussion. Reply within 24 hours on weekdays; if there are unresolved blockers, escalate it to PM.
+- Weekly meetings on Tuesdays: what’s done and what needs to be done for the deliverable. Post in the gc if you can’t make it, if missing thursday section then email Yuki ahead of time: yukyang@cs
+- No direct pushes to main, branch protection require a PR with one approval and passing CI.
+- Post a heads up when merging or opening a PR.
 
 # 2. Product Description
 
@@ -495,10 +500,10 @@ Team check-in, the team result variation, and Use cases 6 and 7 are future featu
 - **Tooling:** GitHub Actions, EAS Build/Submit, Sentry
   - GitHub Actions and EAS Build/Submit integrate smoothly with the tech stack for easy CI/CD.
   - Sentry provides distributed tracing, allowing for simplified error tracking.
-- **Testing:** pgTAP, Jest, Supabase CLI, ESLint, SQLFluff
+- **Testing:** pgTAP, Jest, Supabase CLI, ESLint
   - pgTAP tests the database and Jest tests the client.
   - Supabase CLI runs a local database in CI.
-  - ESLint and SQLFluff enforce the coding guidelines on pull requests.
+  - ESLint enforces the coding guidelines on pull requests.
 
 ## Risks
 
@@ -634,13 +639,13 @@ We foresee that the most challenging part about this project is getting everythi
 
 |  | Week 1 | Week 2 | Week 3 | Week 4 | Week 5 | Week 6 | Week 7 | Week 8 |
 | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: | :---: |
-| UI/UX (Reed) | Tech Stack Finalized **(2-4 hours) COMPLETE** | Complete Screen Mockups and Navigation in FIGMA **(6-8 hours) COMPLETE** | Finalize all the UI Components and Hand Off Designs to Frontend Team **(6-8 hours)**  | Work with Frontend team to Complete UI For One Full Use Case and Help with UI Fixes **(6-8 hours)** | Initial Usability Testing,  Identify UI issues and Write User Guides  **(4-6 hours)** | Debugged, Product Ready for User Feedback  **(4-6 hours)** | Implement Feedback & Nice-To-Haves via CI/CD **(4-6 hours)** | Final UI Testing, Debugging, Deployment! **(4-6 hours)** |
+| UI/UX (Reed) | Tech Stack Finalized **(2-4 hours) COMPLETE** | Complete Screen Mockups and Navigation in FIGMA **(6-8 hours) COMPLETE** | Finalize all the UI Components and Hand Off Designs to Frontend Team **(6-8 hours)**  | Work with Frontend team to Complete UI For One Full Use Case and Help with UI Fixes **(6-8 hours)** | Initial Usability Testing,  Identify UI issues and Write User Guides  **(4-6 hours)** | Debugged, Product Ready for User Feedback  **(4-6 hours)** | Implement Feedback & Nice-To-Haves via CI/CD **(4-6 hours)** | Final UI Testing,, Debugging, Deployment! **(4-6 hours)** |
 | Frontend, map (Daniel) | Expo app scaffolded with navigation **(2-4 hours)** | Map renders seeded courts **(2-4 hours)** | Court sheet and check-in screens (Use Case 6) **(3-5 hours)** | Live markers for courts on screen **(3-5 hours)** | Check-in edge states **(4-6 hours)** | Map and court sheet covered by end-to-end tests **(4-6 hours)** | Implement Feedback & Nice-To-Haves via CI/CD **(5-7 hours)** | Final Tests, Debugging, Deployment! **(4-6 hours)** |
-| Frontend, games (Johnny) | Navigation shell **(2 hours) Done** | Auth screens against the auth stub **(2-4 hours) In progress**  | Sign-up flow (Use Case 4) **(4-6 hours)**  | 1v1 challenge and post-result screens (Use Cases 1, 7) **(4-6 hours)** | King of the Court and fill-a-spot screens (Use Cases 3, 2) **(4-6 hours)** | Team match screens (Use Case 5), with end-to-end tests passing **(4-6 hours)** | Implement Feedback & Nice-To-Haves via CI/CD **(6-8 hours)** | Final Tests, Debugging, Deployment! **(4-6 hours)** |
-| Backend, contract (Joonho) | Supabase client and generated types **(2 hours)** | Auth complete **(4-6 hours)** | Challenge and team-match function signatures on main **(2-4 hours)** | Challenge and result functions the screens call **(4-6 hours)** | Team-match functions **(4-6 hours)** | Contract covered by end-to-end tests **(6-8 hours)** | Implement Feedback & Nice-To-Haves via CI/CD **(4-6 hours)** | Final Tests, Debugging, Deployment! **(4-6 hours)** |
+| Frontend, games (Johnny) | Navigation shell **(2 hours) Done** | Auth screens against the auth stub **(2-4 hours) In progress**  | Sign-up flow (Use Case 4) **(4-6 hours)**  | 1v1 challenge and post-result screens (Use Cases 1, 7) **(4-6 hours)** | King of the Court and fill-a-spot screens (Use Cases 3, 2) **(4-6 hours)** | Team match screens (Use Case 5), with end-to-end tests passing **(4-6 hours)** | Implement Feedback & Nice-To-Haves via CI/CD **(6-8 hours hours)** | Final Tests, Debugging, Deployment! **(4-6 hours)** |
+| Backend, contract (Joonho) | Supabase client and generated types **(2 hours) Complete** | Auth complete **(4-6 hours) In Progress** | Challenge and team-match function signatures on main **(2-4 hours)** | Challenge and result functions the screens call **(4-6 hours)** | Team-match functions **(4-6 hours)** | Contract covered by end-to-end tests **(6-8 hours)** | Implement Feedback & Nice-To-Haves via CI/CD **(4-6 hours)** | Final Tests, Debugging, Deployment! **(4-6 hours)** |
 | Backend, live state (Jace) | Function layout for game rules **(2 hours)**  | Check-in validation stub **(4 hours)** | Check-in expiry and automatic check-out **(4-6 hours)** | Elo and result confirmation **(5 hours)** | King of the Court session and queue **(5 hours)** | Live-state rules covered by tests **(4 hours)** | Implement Feedback & Nice-To-Haves via CI/CD **(4-6 hours)** | Final Tests, Debugging, Deployment! **(6-8 hours)** |
-| PM (Owen) | Tech Stack Finalized **(2-3 hours)** | Set up basic CI **(4-6 hours)** | Add Database to CI, run first tests **(5-7 hours)** | Write E2E checklist **(4-6 hours)** | Run E2E checklist **(6-8 hours)** | Recruit testers & Prep Usability Protocol **(4-6 hours)** | Run Usability tests & Document Feedback **(6-8 Hours)** | Write README & Prep Demo **(4-6 hours)** |
-| Database (Owen) | Draft Schema **(2-3 hours)** | Write Migrations **(4-6 hours)** | RLS Policies & PostGIS Queries Implemented **(5-7 hours)** | Configure Realtime & Review Seed Import **(3-4 hours)** | Fix Database bugs **(3-5 hours)** | Measure Performance against NFR standards **(2-4 hours)** | Migrate Feedback Changes **(3-5 hours)** | Deploy Production Database **(2-4 hours)** |
+| PM (Owen) | Tech Stack Finalized **(2-3 hours) Complete** | Set up basic CI **(4-6 hours) Complete** | Add Database to CI, run first tests **(5-7 hours) In Progress** | Write E2E checklist **(4-6 hours)** | Run E2E checklist **(6-8 hours)** | Recruit testers & Prep Usability Protocol **(4-6 hours)** | Run Usability tests & Document Feedback **(6-8 Hours)** | Write README & Prep Demo **(4-6 hours)** |
+| Database (Owen) | Draft Schema **(2-3 hours) Complete** | Write Migrations **(4-6 hours) Complete** | RLS Policies & PostGIS Queries Implemented **(5-7 hours) IP** | Configure Realtime & Review Seed Import **(3-4 hours)** | Fix Database bugs **(3-5 hours)** | Measure Performance against NFR standards **(2-4 hours)** | Migrate Feedback Changes **(3-5 hours)** | Deploy Production Database **(2-4 hours)** |
 
 **Initial User Testing and Success Checks**
 
@@ -689,13 +694,26 @@ Before a full use case: Use case 3 can be run once the migration, RLS, `check_in
 
 We plan to have people outside of our group to try the app and do things like find a court, check in, and send a challenge. Everyone will try the same tasks without us walking them through it. We’ll keep track of whether they finish and where they get stuck or need help. We also want to see if people understand why they have to check in before seeing who is playing. We’ll also interview them afterward to see what they thought of the app and get their suggestions on what we could improve. We’ll also do the timing and block/report checks listed in our non functional requirements with ten testers. Along with finding courts and sending challenges these tasks will help show us whether new users can get through the main parts of the app without our help.
 
-**Backend/Database tests**
+### Backend/Database tests
+
 We test rating changes, court counts, check-in privacy, and new user journeys.
 
-- **Unit tests:**  pgTAP: reject a check-in at 200 meters, reject a ranked Elo gap over 150, a void leaves profiles.elo unchanged, names stay hidden until check-in, and confirm_result writes profiles.elo and elo_history together. pgTAP checks each RLS policy with two test accounts (one checked in, one not). Jest tests each **services/** module with Supabase.
-- **Integration:** GitHub Actions runs that pgTAP suite on a local Supabase with the migrations and seed. One simulator and one emulator confirm a check-in appears on the second phone within 5 seconds (Section 4). CI applies every migration to an empty database on each pull request, and times **nearby_courts** against 500 seeded courts (Section 4).
+- **Unit tests:** pgTAP: reject a check-in at 200 meters, reject a ranked Elo gap over 150, a void leaves `profiles.elo` unchanged, names stay hidden until check-in, and `confirm_result` writes `profiles.elo` and `elo_history` together. pgTAP checks each RLS policy with two test accounts (one checked in, one not). Jest tests each `services/` module with Supabase.
+- **Integration:** GitHub Actions runs that pgTAP suite on a local Supabase with the migrations and seed. One simulator and one emulator confirm a check-in appears on the second phone within 5 seconds (Section 4). CI applies every migration to an empty database on each pull request, and times `nearby_courts` against 500 seeded courts (Section 4).
 - **Usability:** Ten outsiders, with no walkthrough, sign up, find a court, check in, send a challenge, and find block and report (Section 4). We record where they stop, change the design, and rerun those tasks.
 - **Bugs:** Each failure in testing or use is a GitHub Issue with the screen, account, and server response.
+
+### Test Automation and CI
+
+- **Test Automation:** Jest with the jest-expo preset. Installed for Expo SDK 58. Following [Expo’s unit-testing guide](https://docs.expo.dev/develop/unit-testing/). We use Jest because it tests TS service functions in Node without requiring a phone or database. Jest also runs easily in CI (GitHub Actions) on every pull request. We’re using pgTAP because its tests can act as a specific user and check that the database refuses based on our Postgres row-level security and permissions for ELO and privacy.
+- **Adding a Test:**
+  - add `src/services/<module>.test.ts` next to the module. Run `npm test`. The example is `src/services/auth.test.ts`.
+  - For a database rule, add a pgTAP file in `supabase/tests/database/`. Run `npx supabase test db`.
+- **CI Service:** Github Actions. `.github/workflows/ci.yml` is the workflow file in this repo, which Github sees and runs. The workflow gets a read-only token and uses no secrets, doesn’t connect to the hosted database, We went with Actions because the repo is already on GitHub, whereas CircleCI and Travis CI would both need separate account or repository access to set up. Supabase has an official action for its CLI, and Actions can block merges using branch protection.
+  - The **app job** runs `npm run lint`, `npx tsc --noEmit`, and `npm test`.
+  - The **database job** runs `supabase db start`, which builds an empty database from every migration and the seed, then `supabase test db`. Does not run a simulator or timing checks.
+  - **Triggers:** a push to any branch, a PR to `main`, or a manual run. (any `on:` entries in workflow file)
+- **Frontend Testing:** Frontend testing will be done through use of Expo Go to constantly check whether the UI is behaving properly. We decided to go with Expo Go since it was built to track React components right on your own personal device and wasn’t difficult to set up. The low overhead allows for quick testing of the UI and frontend components.
 
 ### External Feedback:
 
@@ -720,7 +738,7 @@ We test rating changes, court counts, check-in privacy, and new user journeys.
 - **Postgres and PostGIS:** Tables, indexes, and row-level security. The nearby-courts query answers "what is near me?"
 - **Court importer:** A scheduled job reads Seattle open data and OpenStreetMap and updates the court list. Players can also report a missing or wrong court.
 - **User/account:** Manages profiles, friendships, blocks, reports, challenges, and appeals. Uses Supabase Auth for signing in.
-- **Team match:**  Changes the team format and size for a session. Rejects changes that would include a player outside the Elo range in a ranked session.
+- **Team match (Future):** Changes the team format and size for a session. Rejects changes that would include a player outside the Elo range in a ranked session.
 
 ## Interfaces
 
@@ -877,7 +895,7 @@ Users are able to move between the main sections of the app using the navigation
 
 The frontend sends the user’s location to the backend to check if they’re close enough to the court. If they are too far away or don’t allow location access, The app tells them why they can’t check in.
 
-Users can still see court info and player counts, but the backend only sends player names and info from the court and queue to users checked in there. It’s not just hiding names on the screen. Once users check out, they can’t see who is there anymore.  Tokens are kept in Expo SecureStore.
+Users can still see court info and player counts, but the backend only sends player names and info from the court and queue to users checked in there. It’s not just hiding names on the screen. Once users check out, they can’t see who is there anymore. Tokens are kept in Expo SecureStore.
 
 ## Backend
 
@@ -889,7 +907,7 @@ We plan to organize the backend into the following folders:
 
 ### Court session
 
-Planned split: courtInfo/ also manages queue order, the crown, the stream, and session start/end. Check-in handles attendance.  These folders group the Postgres functions in Supabase.
+Planned split: `courtInfo/` also manages queue order, the crown, the streak, and session start/end. Check-in handles attendance. These folders group the Postgres functions in Supabase.
 
 - `courtInfo/`: Contains logic updating the **courts** table, keeping track of each court’s occupancy, game type, and allowing users to join a court session
 - `games/`: Contains logic for keeping track of ongoing games, as well as logging the results of previous games. Provides frontend with information regarding games in progress or in the matchmaking phase, and stores results.
@@ -900,12 +918,15 @@ Planned split: courtInfo/ also manages queue order, the crown, the stream, and s
 
 ### Supabase Auth
 
-- Supabase Auth SDK. Handles login and authentication. User Acc/ uses it for sign in.
-- `userAcc/`: Contains logic to manage user’s account, including personal information, logins, friendships, challenge log, appeals, etc. Will handle user login and authentication via Superbase Auth. Provides frontend with a user’s profile information, and will restrict certain operations from frontend based on appeal/block statuses.
+- Supabase Auth SDK. Handles login and authentication. `userAcc/` uses it for sign in.
+
+### User/account
+
+- `userAcc/`: Contains logic to manage user’s account, including personal information, logins, friendships, challenge log, appeals, etc. Will handle user login and authentication via Supabase Auth. Provides frontend with a user’s profile information, and will restrict certain operations from frontend based on appeal/block statuses.
 
 ### Check-in
 
-Planned Postfres functions in Supabase.
+Planned Postgres functions in Supabase.
 
 - `check_in`: checks location and sets 3 hour expiry
 - `check_out`: Ends the user’s check in.
@@ -935,19 +956,9 @@ Tables are described in Data storage (Section 7). This is the code for reading a
 
 - Realtime on check_ins, sessions, session_players: Announce changes to the map and court screens subscribed to them.
 
-#### Indexes and constraints.
+#### Indexes and constraints
 
-| **Index / constraint** | **Serves** |
-| --- | --- |
-| **GiST on courts.location** | Nearby-courts search |
-| **check_ins(court_id) where checked_out_at IS NULL** | Live player count per court |
-| **UNIQUE check_ins(user_id) where checked_out_at IS NULL** | One open check-in per user |
-| **UNIQUE on (LEAST, GREATEST) of the two friendships ids** | No duplicate friendship in reverse |
-| **friendships(addressee_id)** | Incoming friend requests |
-| **challenges(opponent_id, status)** | A user's pending challenges |
-| **UNIQUE sessions(court_id) where ended_at IS NULL** | One active session per court |
-| **UNIQUE elo_history(game_id, user_id) and UNIQUE elo_history(session_id, user_id)** | Elo applied at most once per game or session |
-| **warnings(user_id, created_at)** | Counting a player's recent warnings |
+Indexes on court locations serve nearby search (Sec 4). Constraints keep an open check-in per user, one active session per court, at most one Elo change per player for a game session.
 
 #### Design decisions:
 
