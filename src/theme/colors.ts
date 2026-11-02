@@ -7,6 +7,8 @@ export const colors = {
   bg: '#0D0D0D',
   /** Input and secondary button fill. Figma: motion-color-panel */
   panel: '#1C1C1C',
+  /** Unfilled steps of the sign-up progress bar. Figma: motion-color-raised */
+  raised: '#2A2A2A',
   /** Main text. Figma: motion-color-text */
   text: '#F2F2F0',
   /** Secondary text and placeholders. Figma: motion-color-muted */

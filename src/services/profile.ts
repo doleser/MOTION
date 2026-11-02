@@ -53,6 +53,44 @@ export const STARTING_ELO_BY_LEVEL: Readonly<Record<SkillLevel, number>> = {
   skipped: 1200,
 };
 
+// ---------- Profile options ----------
+// `id` is what gets saved; `label` is what players see, so labels can be
+// renamed without touching saved profiles.
+
+export interface ProfileOption {
+  id: string;
+  label: string;
+}
+
+/** Positions, in court order. A player picks at most one. */
+export const POSITIONS: readonly ProfileOption[] = [
+  {id: 'pg', label: 'PG'},
+  {id: 'sg', label: 'SG'},
+  {id: 'sf', label: 'SF'},
+  {id: 'pf', label: 'PF'},
+  {id: 'c', label: 'C'},
+];
+
+/** Play-style tags. A player picks up to MAX_PLAY_STYLE_TAGS. */
+export const PLAY_STYLE_TAGS: readonly ProfileOption[] = [
+  {id: 'shooter', label: 'Shooter'},
+  {id: 'slasher', label: 'Slasher'},
+  {id: 'playmaker', label: 'Playmaker'},
+  {id: 'lockdown_defender', label: 'Lockdown defender'},
+  {id: 'rebounder', label: 'Rebounder'},
+  {id: 'rim_protector', label: 'Rim protector'},
+  {id: 'post_scorer', label: 'Post scorer'},
+  {id: 'hustle', label: 'Hustle'},
+];
+
+export const MAX_PLAY_STYLE_TAGS = 3;
+
+/** Height range in total inches: 4'6" to 7'6". */
+export const HEIGHT_RANGE_INCHES = {min: 54, max: 90} as const;
+
+/** Where the height slider's dot rests before a height is set: 6'0". */
+export const STARTING_HEIGHT_INCHES = 72;
+
 // ---------- Username rules ----------
 
 /** Same rule as the `username_format` check in the database. */
@@ -130,6 +168,22 @@ export async function isUsernameAvailable(username: string): Promise<boolean> {
     throw new ServiceError('invalid_username', formatError);
   }
   return !isUsernameTaken(username);
+}
+
+/**
+ * Of `usernames`, the ones nobody has yet, in the same order. One call
+ * (one request) for the whole list, however long it is. Works while signed
+ * out. Names that break the format rule are simply left out.
+ *
+ * Used to pick a free username suggestion. The real version will call a
+ * database function, proposed as `available_usernames(names text[])`
+ * (not in the backend yet; see the note for Owen).
+ */
+export async function getAvailableUsernames(usernames: string[]): Promise<string[]> {
+  await fakeDelay();
+  return usernames.filter(
+    (username) => getUsernameError(username) === null && !isUsernameTaken(username),
+  );
 }
 
 // ---------- Stub-only helpers (used by account.ts) ----------

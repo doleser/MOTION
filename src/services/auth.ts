@@ -54,14 +54,11 @@ interface StoredUser extends AuthUser {
   password: string;
 }
 
-/** Pretend these emails already have accounts. */
-const TAKEN_EMAILS = ['taken@uw.edu'];
-
 /**
- * Pretend someone signs up with these while you're onboarding: they pass the
- * check on SignUp but fail at createAccount. Use "sniped@uw.edu" to test it.
+ * Pretend these emails already have accounts. Sign-up only finds out at
+ * createAccount (the last step). Use "taken@uw.edu" to test it.
  */
-const TAKEN_AT_SAVE_EMAILS = ['sniped@uw.edu'];
+const TAKEN_EMAILS = ['taken@uw.edu'];
 
 const usersByEmail = new Map<string, StoredUser>();
 const listeners = new Set<AuthListener>();
@@ -83,19 +80,6 @@ function isEmailTaken(email: string): boolean {
 }
 
 // ---------- Public API ----------
-
-/**
- * True if no account uses this email yet. Works while signed out.
- * Throws 'invalid_email' if the email is badly formatted.
- */
-export async function isEmailAvailable(email: string): Promise<boolean> {
-  await fakeDelay();
-  const formatError = getEmailError(email);
-  if (formatError) {
-    throw new ServiceError('invalid_email', formatError);
-  }
-  return !isEmailTaken(email);
-}
 
 export async function signInWithPassword({
   email,
@@ -150,7 +134,7 @@ export function stubCheckNewUser(email: string, password: string): void {
   if (passwordError) {
     throw new ServiceError('weak_password', passwordError);
   }
-  if (isEmailTaken(email) || TAKEN_AT_SAVE_EMAILS.includes(normalizeEmail(email))) {
+  if (isEmailTaken(email)) {
     throw new ServiceError(
       'email_taken',
       'An account with this email already exists. Try logging in.',

@@ -33,15 +33,17 @@ export function AuthStack() {
 
         {/* Sign-up flow, in order */}
         <Stack.Screen name="SignUp" component={SignUpScreen} options={{headerShown: false}} />
+        {/* Draws its own top bar (Figma design). */}
         <Stack.Screen
           name="ChooseHandle"
           component={ChooseHandleScreen}
-          options={{title: 'Username'}}
+          options={{headerShown: false}}
         />
+        {/* Draws its own top bar (Figma design). */}
         <Stack.Screen
           name="ProfileDetails"
           component={ProfileDetailsScreen}
-          options={{title: 'Details'}}
+          options={{headerShown: false}}
         />
         <Stack.Screen
           name="Experience"

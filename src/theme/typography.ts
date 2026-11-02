@@ -33,6 +33,8 @@ export const typography = {
   display: {fontFamily: fonts.anton, fontSize: 52},
   /** Screen headline, e.g. "BACK ON THE COURT". Figma: MOTION / title (Anton 32/40) */
   title: {fontFamily: fonts.anton, fontSize: 32, lineHeight: 40},
+  /** Big values inside controls, e.g. "6 FT". Figma: MOTION / section (Anton 24/30) */
+  section: {fontFamily: fonts.anton, fontSize: 24, lineHeight: 30},
   /** Field labels and small caps lines. Figma: MOTION / label (Inter Bold 12/16) */
   label: {fontFamily: fonts.interBold, fontSize: 12, lineHeight: 16},
   /** Paragraphs and input text. Figma: MOTION / body (Inter Regular 14/20) */

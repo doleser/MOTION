@@ -43,4 +43,6 @@ export const sizes = {
   iconStroke: 1.8,
   /** Height of the top bar with the back button (Figma: 58). */
   header: 58,
+  /** Height of the sign-up progress bar (Figma: 4). */
+  progress: 4,
 } as const;
