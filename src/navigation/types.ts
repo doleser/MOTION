@@ -18,12 +18,14 @@ import type {NativeStackScreenProps} from '@react-navigation/native-stack';
 // ---------- Root ----------
 
 /**
- * The root shows exactly one of these two groups, depending on whether the
- * user is signed in (see RootNavigator).
+ * The root shows exactly one of these, depending on whether the user is
+ * signed in and has a username (see RootNavigator).
  */
 export type RootStackParamList = {
   Auth: NavigatorScreenParams<AuthStackParamList>;
   Main: NavigatorScreenParams<MainTabParamList>;
+  /** Signed in without a username. Shouldn't happen; see FinishSetupScreen. */
+  FinishSetup: undefined;
 };
 
 // ---------- Auth (signed out): login and the whole sign-up flow ----------
@@ -32,19 +34,17 @@ export type RootStackParamList = {
 export type AuthStackParamList = {
   Welcome: undefined;
   Login: undefined;
-  /** `errorMessage` is set when HomeCourt sends the user back (e.g. email taken). */
+  /** `errorMessage` is set when StartingElo sends the user back (e.g. email taken). */
   SignUp: {errorMessage?: string} | undefined;
-  /** `errorMessage` is set when HomeCourt sends the user back (username taken). */
+  /** `errorMessage` is set when StartingElo sends the user back (username taken). */
   ChooseHandle: {errorMessage?: string} | undefined;
   ProfileDetails: undefined;
-  SelfAssessment: undefined;
-  Permissions: undefined;
-  HomeCourt: undefined;
-  /** Shown after createAccount succeeds, with the Elo the server returned. */
-  StartingElo: {elo: number};
+  Experience: undefined;
+  /** Previews the starting Elo from the draft; "Create account" ends sign-up. */
+  StartingElo: undefined;
 };
 
-// ---------- Main (signed in, onboarded) ----------
+// ---------- Main (signed in, with a username) ----------
 
 export type MainTabParamList = {
   Map: undefined;

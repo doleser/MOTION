@@ -1,21 +1,26 @@
-import {AppButton} from '../../components/AppButton';
-import {Screen} from '../../components/Screen';
+import {useIsFocused} from '@react-navigation/native';
+import {StatusBar} from 'expo-status-bar';
+
 import type {AuthScreenProps} from '../../navigation/types';
+import {WelcomeScreenView} from './WelcomeScreenView';
 
 /**
- * UNUSED for now: the app opens straight to Login (the Figma design).
- * Kept until the team decides whether a separate welcome screen is needed.
- * It is not registered in AuthStack, so it can't be reached.
+ * The first screen a signed-out user sees: Get started -> SignUp,
+ * Log in -> Login. WelcomeScreenView draws the screen.
  */
 export function WelcomeScreen({navigation}: AuthScreenProps<'Welcome'>) {
+  // Screens stay mounted under the ones opened on top of them, so only set
+  // the status bar while this screen is the one showing.
+  const isFocused = useIsFocused();
+
   return (
-    <Screen title="Motion" subtitle="Find a run. Play on your terms.">
-      <AppButton label="Get started" onPress={() => navigation.navigate('SignUp')} />
-      <AppButton
-        label="Log in"
-        variant="secondary"
-        onPress={() => navigation.navigate('Login')}
+    <>
+      {/* White clock and battery on the dark screen. */}
+      {isFocused ? <StatusBar style="light" /> : null}
+      <WelcomeScreenView
+        onGetStarted={() => navigation.navigate('SignUp')}
+        onLogIn={() => navigation.navigate('Login')}
       />
-    </Screen>
+    </>
   );
 }

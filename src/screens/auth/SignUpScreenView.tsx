@@ -5,6 +5,7 @@ import {MotionButton} from '../../components/MotionButton';
 import {MotionCheckbox} from '../../components/MotionCheckbox';
 import {MotionField} from '../../components/MotionField';
 import {ScreenHeader} from '../../components/ScreenHeader';
+import {SignUpProgress} from '../../components/SignUpProgress';
 import {colors, spacing, typography} from '../../theme';
 
 interface SignUpScreenViewProps {
@@ -18,8 +19,6 @@ interface SignUpScreenViewProps {
   error: string | null;
   /** False until both fields are filled and the box is checked. */
   canContinue: boolean;
-  /** Shows a spinner on the Continue button while the email is checked. */
-  isChecking: boolean;
   onContinue: () => void;
   onLogIn: () => void;
   onBack: () => void;
@@ -28,10 +27,12 @@ interface SignUpScreenViewProps {
 /**
  * Sign up screen layout. Figma: "AUTH / Signup" (node 2114:79).
  *
- * Two changes from Figma, both agreed by the team:
+ * Changes from Figma, all agreed by the team:
+ * - The sign-up progress bar (step 1 of 5) under the header, to match the
+ *   later sign-up steps.
  * - An "I'm 18 or older" checkbox instead of the "DATE OF BIRTH" field.
  * - The main button says "CONTINUE", not "CREATE ACCOUNT": the account is
- *   only created at the end of sign-up (HomeCourt's Finish).
+ *   only created at the end of sign-up (StartingElo's Create account).
  *
  * UI only: it shows what it's given and reports taps. SignUpScreen.tsx holds
  * the state and does the checks.
@@ -45,7 +46,6 @@ export function SignUpScreenView({
   onChangeIsAdult,
   error,
   canContinue,
-  isChecking,
   onContinue,
   onLogIn,
   onBack,
@@ -53,7 +53,12 @@ export function SignUpScreenView({
   return (
     <AuthLayout
       gap={spacing.md}
-      header={<ScreenHeader title="MOTION / CREATE ACCOUNT" onBack={onBack} />}>
+      header={
+        <>
+          <ScreenHeader title="MOTION / CREATE ACCOUNT" onBack={onBack} />
+          <SignUpProgress step={1} total={5} />
+        </>
+      }>
       <Text style={styles.step}>01 / CREATE ACCOUNT</Text>
       <Text style={styles.title}>{'GET IN\nTHE GAME.'}</Text>
       <Text style={styles.subtitle}>Create an account, then set up your player card.</Text>
@@ -88,7 +93,6 @@ export function SignUpScreenView({
         label="CONTINUE"
         onPress={onContinue}
         disabled={!canContinue}
-        loading={isChecking}
       />
       <MotionButton label="ALREADY A MEMBER? LOG IN" variant="secondary" onPress={onLogIn} />
     </AuthLayout>

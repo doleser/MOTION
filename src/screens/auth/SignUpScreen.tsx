@@ -3,15 +3,18 @@ import {StatusBar} from 'expo-status-bar';
 import {useState} from 'react';
 
 import type {AuthScreenProps} from '../../navigation/types';
-import {getEmailError, getPasswordError, isEmailAvailable} from '../../services/auth';
-import {getErrorMessage} from '../../services/errors';
+import {getEmailError, getPasswordError} from '../../services/auth';
 import {useOnboardingDraft} from '../onboarding/OnboardingDraftContext';
 import {SignUpScreenView} from './SignUpScreenView';
 
 /**
- * First sign-up step. Checks the answers but saves nothing: the account is
- * created at the end of sign-up (HomeCourt's Finish). SignUpScreenView draws
- * the screen.
+ * First sign-up step. Checks the email and password FORMAT only and saves
+ * them to the draft. Whether the email is already registered is only found
+ * out at the end (StartingElo's Create account), which sends the user back
+ * here with the message. SignUpScreenView draws the screen.
+ *
+ * Why not check the email here: an early "is this email registered?" check
+ * would let anyone find out who has an account.
  */
 export function SignUpScreen({navigation, route}: AuthScreenProps<'SignUp'>) {
   const {draft, updateDraft} = useOnboardingDraft();
@@ -22,13 +25,12 @@ export function SignUpScreen({navigation, route}: AuthScreenProps<'SignUp'>) {
   const [error, setError] = useState<string | null>(
     route.params?.errorMessage ?? null,
   );
-  const [isChecking, setIsChecking] = useState(false);
   // Screens stay mounted under the ones opened on top of them, so only set
   // the status bar while this screen is the one showing.
   const isFocused = useIsFocused();
 
-  // HomeCourt sends the user back here if the email was taken in the
-  // meantime. When new params arrive, show their message.
+  // StartingElo sends the user back here if the email is already
+  // registered. When new params arrive, show their message.
   // (React's recommended way to update state from changed props:
   // https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes)
   const [lastParams, setLastParams] = useState(route.params);
@@ -39,8 +41,8 @@ export function SignUpScreen({navigation, route}: AuthScreenProps<'SignUp'>) {
 
   const canContinue = email.length > 0 && password.length > 0 && isAdult;
 
-  async function handleContinue() {
-    // Instant checks first; these don't need the server.
+  function handleContinue() {
+    // Instant checks; no server call.
     const formatError = getEmailError(email) ?? getPasswordError(password);
     if (formatError) {
       setError(formatError);
@@ -48,26 +50,14 @@ export function SignUpScreen({navigation, route}: AuthScreenProps<'SignUp'>) {
     }
 
     setError(null);
-    setIsChecking(true);
-    try {
-      const available = await isEmailAvailable(email);
-      if (!available) {
-        setError('An account with this email already exists. Try logging in.');
-        return;
-      }
-      updateDraft({email: email.trim(), password, confirmedAdult: true});
-      navigation.navigate('ChooseHandle');
-    } catch (e) {
-      setError(getErrorMessage(e));
-    } finally {
-      setIsChecking(false);
-    }
+    updateDraft({email: email.trim(), password, confirmedAdult: true});
+    navigation.navigate('ChooseHandle');
   }
 
-  // Login is always underneath (it's the first screen), so go back to it
-  // rather than opening a second copy.
+  // Swaps this screen for Login instead of stacking it on top, so Back from
+  // Login still returns to Welcome and the two screens never pile up.
   function goToLogin() {
-    navigation.popTo('Login');
+    navigation.replace('Login');
   }
 
   return (
@@ -83,10 +73,10 @@ export function SignUpScreen({navigation, route}: AuthScreenProps<'SignUp'>) {
         onChangeIsAdult={setIsAdult}
         error={error}
         canContinue={canContinue}
-        isChecking={isChecking}
         onContinue={handleContinue}
         onLogIn={goToLogin}
-        onBack={goToLogin}
+        // Welcome is always underneath.
+        onBack={() => navigation.goBack()}
       />
     </>
   );

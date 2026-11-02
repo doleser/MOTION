@@ -1,73 +1,61 @@
+import {useIsFocused} from '@react-navigation/native';
+import {StatusBar} from 'expo-status-bar';
 import {useState} from 'react';
 
-import {AppButton} from '../../components/AppButton';
-import {Screen} from '../../components/Screen';
-import {TextField} from '../../components/TextField';
+import {cmToInches, inchesToCm} from '../../components/heightMath';
 import type {AuthScreenProps} from '../../navigation/types';
+import {ProfileDetailsScreenView} from '../auth/ProfileDetailsScreenView';
 import {useOnboardingDraft} from './OnboardingDraftContext';
 
-/** Turns "shooter, defender" into ['shooter', 'defender']. */
-function parseTags(text: string): string[] {
-  return text
-    .split(',')
-    .map((tag) => tag.trim())
-    .filter((tag) => tag.length > 0);
-}
-
+/**
+ * Sign-up step 3: optional position, height, and play-style tags. Saves
+ * them to the draft on NEXT (or clears them on SKIP FOR NOW), then goes to
+ * Experience. ProfileDetailsScreenView draws the screen.
+ */
 export function ProfileDetailsScreen({
   navigation,
 }: AuthScreenProps<'ProfileDetails'>) {
   const {draft, updateDraft} = useOnboardingDraft();
-  const [position, setPosition] = useState(draft.position ?? '');
-  const [height, setHeight] = useState(draft.heightCm?.toString() ?? '');
-  const [tags, setTags] = useState(draft.tags?.join(', ') ?? '');
-
-  const heightCm = height.length > 0 ? Number(height) : undefined;
-  const heightError =
-    heightCm !== undefined && !(Number.isInteger(heightCm) && heightCm > 0)
-      ? 'Enter your height as a whole number of centimeters.'
-      : null;
+  // Pre-filled from the draft when the user comes back to this screen.
+  const [positionId, setPositionId] = useState<string | null>(draft.position ?? null);
+  const [heightInches, setHeightInches] = useState<number | null>(
+    draft.heightCm === undefined ? null : cmToInches(draft.heightCm),
+  );
+  const [tagIds, setTagIds] = useState<string[]>(draft.tags ?? []);
+  // Screens stay mounted under the ones opened on top of them, so only set
+  // the status bar while this screen is the one showing.
+  const isFocused = useIsFocused();
 
   function handleNext() {
-    const parsedTags = parseTags(tags);
     updateDraft({
-      position: position.trim() || undefined,
-      heightCm,
-      tags: parsedTags.length > 0 ? parsedTags : undefined,
+      position: positionId ?? undefined,
+      // Saved as whole centimeters.
+      heightCm: heightInches === null ? undefined : inchesToCm(heightInches),
+      tags: tagIds.length > 0 ? tagIds : undefined,
     });
-    navigation.navigate('SelfAssessment');
+    navigation.navigate('Experience');
   }
 
   function handleSkip() {
     updateDraft({position: undefined, heightCm: undefined, tags: undefined});
-    navigation.navigate('SelfAssessment');
+    navigation.navigate('Experience');
   }
 
   return (
-    <Screen title="About your game" subtitle="Optional. You can add these later.">
-      <TextField
-        label="Position"
-        placeholder="e.g. Guard"
-        value={position}
-        onChangeText={setPosition}
+    <>
+      {/* White clock and battery on the dark screen. */}
+      {isFocused ? <StatusBar style="light" /> : null}
+      <ProfileDetailsScreenView
+        positionId={positionId}
+        onChangePosition={setPositionId}
+        heightInches={heightInches}
+        onChangeHeight={setHeightInches}
+        tagIds={tagIds}
+        onChangeTags={setTagIds}
+        onNext={handleNext}
+        onSkip={handleSkip}
+        onBack={() => navigation.goBack()}
       />
-      <TextField
-        label="Height (cm)"
-        placeholder="e.g. 183"
-        value={height}
-        onChangeText={setHeight}
-        keyboardType="number-pad"
-        error={heightError}
-      />
-      <TextField
-        label="Play style tags"
-        placeholder="e.g. shooter, defender"
-        value={tags}
-        onChangeText={setTags}
-        autoCapitalize="none"
-      />
-      <AppButton label="Next" onPress={handleNext} disabled={heightError !== null} />
-      <AppButton label="Skip" variant="secondary" onPress={handleSkip} />
-    </Screen>
+    </>
   );
 }

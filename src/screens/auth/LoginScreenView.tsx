@@ -3,6 +3,7 @@ import {StyleSheet, Text, View} from 'react-native';
 import {AuthLayout} from '../../components/AuthLayout';
 import {MotionButton} from '../../components/MotionButton';
 import {MotionField} from '../../components/MotionField';
+import {ScreenHeader} from '../../components/ScreenHeader';
 import {colors, spacing, typography} from '../../theme';
 
 interface LoginScreenViewProps {
@@ -18,6 +19,8 @@ interface LoginScreenViewProps {
   isSubmitting: boolean;
   onLogin: () => void;
   onSignUp: () => void;
+  /** Back arrow in the top bar: returns to Welcome. */
+  onBack: () => void;
 }
 
 /**
@@ -36,9 +39,12 @@ export function LoginScreenView({
   isSubmitting,
   onLogin,
   onSignUp,
+  onBack,
 }: LoginScreenViewProps) {
   return (
-    <AuthLayout gap={spacing.lg}>
+    <AuthLayout
+      gap={spacing.lg}
+      header={<ScreenHeader title="MOTION / LOG IN" onBack={onBack} />}>
       <Text style={styles.logo}>MOTION</Text>
       <Text style={styles.tagline}>FIND A COURT. GET NEXT.</Text>
       <Text style={styles.title}>{'BACK ON\nTHE COURT'}</Text>
