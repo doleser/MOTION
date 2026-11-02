@@ -21,12 +21,12 @@ describe('getUsernameError', () => {
 });
 
 describe('STARTING_ELO_BY_LEVEL', () => {
-  it('gives every level a starting Elo, with skipped matching advanced', () => {
+  it('gives every level a starting Elo, with skipped in the middle', () => {
     expect(STARTING_ELO_BY_LEVEL).toEqual({
       beginner: 400,
       intermediate: 800,
       advanced: 1200,
-      skipped: 1200,
+      skipped: 800,
     });
   });
 });

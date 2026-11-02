@@ -36,7 +36,7 @@ describe('createAccount', () => {
         username: 'hooper2',
         level: 'intermediate',
         heightCm: 188,
-        preferredCourtIds: [1, 6],
+        homeCourtId: 6,
       }),
     );
 
@@ -44,7 +44,7 @@ describe('createAccount', () => {
       username: 'hooper2',
       elo: STARTING_ELO_BY_LEVEL.intermediate,
       heightCm: 188,
-      preferredCourtIds: [1, 6],
+      homeCourtId: 6,
     });
     expect((await getSession())?.user.email).toBe('hooper2@uw.edu');
     expect(await getMyProfile()).toEqual(profile);

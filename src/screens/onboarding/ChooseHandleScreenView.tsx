@@ -6,6 +6,7 @@ import {MotionField} from '../../components/MotionField';
 import {ScreenHeader} from '../../components/ScreenHeader';
 import {SignUpProgress} from '../../components/SignUpProgress';
 import {colors, typography} from '../../theme';
+import {SIGN_UP_STEP_COUNT} from './signUpSteps';
 
 /** One line of feedback under the field. */
 export interface HandleStatus {
@@ -51,7 +52,7 @@ export function ChooseHandleScreenView({
       header={
         <>
           <ScreenHeader title="CHOOSE YOUR USERNAME" onBack={onBack} />
-          <SignUpProgress step={2} total={5} />
+          <SignUpProgress step={2} total={SIGN_UP_STEP_COUNT} />
         </>
       }
       footer={<MotionButton label="NEXT" onPress={onContinue} disabled={!canContinue} />}>

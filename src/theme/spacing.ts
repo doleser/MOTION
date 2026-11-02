@@ -15,6 +15,8 @@ export const spacing = {
   lg: 16,
   /** Left/right screen margin (not a variable). */
   screen: 20,
+  /** Gap between the blocks on the Creating account screen. Figma: motion-space-24 */
+  xl: 24,
 } as const;
 
 export const radius = {

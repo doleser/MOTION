@@ -10,7 +10,7 @@ import {useOnboardingDraft} from './OnboardingDraftContext';
 /**
  * Sign-up step 3: optional position, height, and play-style tags. Saves
  * them to the draft on NEXT (or clears them on SKIP FOR NOW), then goes to
- * Experience. ProfileDetailsScreenView draws the screen.
+ * HomeCourt. ProfileDetailsScreenView draws the screen.
  */
 export function ProfileDetailsScreen({
   navigation,
@@ -33,12 +33,12 @@ export function ProfileDetailsScreen({
       heightCm: heightInches === null ? undefined : inchesToCm(heightInches),
       tags: tagIds.length > 0 ? tagIds : undefined,
     });
-    navigation.navigate('Experience');
+    navigation.navigate('HomeCourt');
   }
 
   function handleSkip() {
     updateDraft({position: undefined, heightCm: undefined, tags: undefined});
-    navigation.navigate('Experience');
+    navigation.navigate('HomeCourt');
   }
 
   return (

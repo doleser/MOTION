@@ -21,8 +21,8 @@ export interface Profile {
   position?: string;
   heightCm?: number;
   tags?: string[];
-  /** Courts the player usually plays at (ids from the courts service). */
-  preferredCourtIds?: number[];
+  /** The court the player usually plays at (id from the courts service). */
+  homeCourtId?: number;
 }
 
 /** The profile answers collected during sign-up. */
@@ -32,7 +32,7 @@ export interface CreateProfileInput {
   position?: string;
   heightCm?: number;
   tags?: string[];
-  preferredCourtIds?: number[];
+  homeCourtId?: number;
 }
 
 /** Same as the `elo` column default in the database. */
@@ -42,15 +42,18 @@ const DEFAULT_ELO = 1200;
  * Starting Elo for each self-assessed level. The ONE place this mapping
  * lives: the StartingElo preview and the createAccount stub both read it.
  *
- * TODO(team): not final. The design doc says 400 / 800 / 1200 but also
- * "clamp to 900-1500", which contradict each other. The real number will
- * come from the backend.
+ * Skipping starts in the middle (800), so skipping is never better than
+ * answering honestly.
+ *
+ * TODO(team): not final. The design doc also mentions "clamp to 900-1500",
+ * which contradicts these. The real number will come from the backend
+ * (complete_profile still says skipped = 1200 and needs the same change).
  */
 export const STARTING_ELO_BY_LEVEL: Readonly<Record<SkillLevel, number>> = {
   beginner: 400,
   intermediate: 800,
   advanced: 1200,
-  skipped: 1200,
+  skipped: 800,
 };
 
 // ---------- Profile options ----------

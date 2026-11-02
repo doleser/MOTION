@@ -39,6 +39,7 @@ export type AuthStackParamList = {
   /** `errorMessage` is set when StartingElo sends the user back (username taken). */
   ChooseHandle: {errorMessage?: string} | undefined;
   ProfileDetails: undefined;
+  HomeCourt: undefined;
   Experience: undefined;
   /** Previews the starting Elo from the draft; "Create account" ends sign-up. */
   StartingElo: undefined;

@@ -35,7 +35,8 @@ export interface OnboardingDraft {
   position?: string;
   heightCm?: number;
   tags?: string[];
-  preferredCourtIds?: number[];
+  // From HomeCourt
+  homeCourtId?: number;
   // From Experience
   level?: SkillLevel;
 }
