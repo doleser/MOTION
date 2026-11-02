@@ -31,6 +31,11 @@ export const typography = {
    * so the font's natural height is fine.
    */
   display: {fontFamily: fonts.anton, fontSize: 52},
+  /**
+   * The big starting Elo number. Figma: MOTION / profile elo (Anton 112/132).
+   * No lineHeight, for the same reason as `display`.
+   */
+  elo: {fontFamily: fonts.anton, fontSize: 112},
   /** Screen headline, e.g. "BACK ON THE COURT". Figma: MOTION / title (Anton 32/40) */
   title: {fontFamily: fonts.anton, fontSize: 32, lineHeight: 40},
   /** Big values inside controls, e.g. "6 FT". Figma: MOTION / section (Anton 24/30) */

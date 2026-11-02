@@ -15,6 +15,7 @@ import {
   STARTING_HEIGHT_INCHES,
 } from '../../services/profile';
 import {colors, spacing, typography} from '../../theme';
+import {SIGN_UP_STEP_COUNT} from '../onboarding/signUpSteps';
 
 interface ProfileDetailsScreenViewProps {
   /** Picked position id (e.g. 'pg'), or null. */
@@ -62,8 +63,7 @@ export function ProfileDetailsScreenView({
       header={
         <>
           <ScreenHeader title="ABOUT YOUR GAME" onBack={onBack} />
-          {/* TODO: total becomes 6 when the home court screen is added. */}
-          <SignUpProgress step={3} total={5} />
+          <SignUpProgress step={3} total={SIGN_UP_STEP_COUNT} />
         </>
       }
       footer={

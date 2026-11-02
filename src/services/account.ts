@@ -28,7 +28,8 @@ export interface CreateAccountInput {
   position?: string;
   heightCm?: number;
   tags?: string[];
-  preferredCourtIds?: number[];
+  /** The one court the player usually plays at. */
+  homeCourtId?: number;
 }
 
 /**

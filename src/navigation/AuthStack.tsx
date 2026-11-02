@@ -6,6 +6,7 @@ import {SignUpScreen} from '../screens/auth/SignUpScreen';
 import {WelcomeScreen} from '../screens/auth/WelcomeScreen';
 import {ChooseHandleScreen} from '../screens/onboarding/ChooseHandleScreen';
 import {ExperienceScreen} from '../screens/onboarding/ExperienceScreen';
+import {HomeCourtScreen} from '../screens/onboarding/HomeCourtScreen';
 import {OnboardingDraftProvider} from '../screens/onboarding/OnboardingDraftContext';
 import {ProfileDetailsScreen} from '../screens/onboarding/ProfileDetailsScreen';
 import {StartingEloScreen} from '../screens/onboarding/StartingEloScreen';
@@ -16,7 +17,7 @@ const Stack = createNativeStackNavigator<AuthStackParamList>();
 /**
  * Everything a signed-out user can see: Welcome (the first screen), Login,
  * and the whole sign-up flow: SignUp -> ChooseHandle -> ProfileDetails ->
- * Experience -> StartingElo. Back works on every step; from Login or SignUp
+ * HomeCourt -> Experience -> StartingElo. Back works on every step; from Login or SignUp
  * it returns to Welcome.
  */
 export function AuthStack() {
@@ -45,16 +46,22 @@ export function AuthStack() {
           component={ProfileDetailsScreen}
           options={{headerShown: false}}
         />
+        {/* HomeCourt, Experience, and StartingElo draw their own top bars. */}
+        <Stack.Screen
+          name="HomeCourt"
+          component={HomeCourtScreen}
+          options={{headerShown: false}}
+        />
         <Stack.Screen
           name="Experience"
           component={ExperienceScreen}
-          options={{title: 'Experience'}}
+          options={{headerShown: false}}
         />
         {/* Back still works here: nothing is saved until "Create account". */}
         <Stack.Screen
           name="StartingElo"
           component={StartingEloScreen}
-          options={{title: 'Starting Elo'}}
+          options={{headerShown: false}}
         />
       </Stack.Navigator>
     </OnboardingDraftProvider>

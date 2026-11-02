@@ -8,22 +8,31 @@ const backIcon = require('../../assets/icons/back.svg');
 
 interface ScreenHeaderProps {
   title: string;
-  /** Called when the back arrow is tapped. The screen decides what "back" means. */
-  onBack: () => void;
+  /**
+   * Called when the back arrow is tapped. The screen decides what "back"
+   * means. Leave it out to hide the arrow (e.g. while an account is being
+   * created); the title stays in the same place.
+   */
+  onBack?: () => void;
 }
 
 /** Top bar with a back arrow and a title. Figma: "MVP / Header". */
 export function ScreenHeader({title, onBack}: ScreenHeaderProps) {
   return (
     <View style={styles.header}>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel="Go back"
-        onPress={onBack}
-        style={({pressed}) => [styles.back, pressed && styles.pressed]}>
-        {/* The SVG file sets its own 24 x 24 size. */}
-        <LocalSvg asset={backIcon} />
-      </Pressable>
+      {onBack ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel="Go back"
+          onPress={onBack}
+          style={({pressed}) => [styles.back, pressed && styles.pressed]}>
+          {/* The SVG file sets its own 24 x 24 size. */}
+          <LocalSvg asset={backIcon} />
+        </Pressable>
+      ) : (
+        // Empty space the size of the arrow, so the title doesn't move.
+        <View style={styles.back} />
+      )}
       <Text style={styles.title} numberOfLines={1}>
         {title}
       </Text>

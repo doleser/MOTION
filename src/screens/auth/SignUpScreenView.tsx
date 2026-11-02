@@ -7,6 +7,7 @@ import {MotionField} from '../../components/MotionField';
 import {ScreenHeader} from '../../components/ScreenHeader';
 import {SignUpProgress} from '../../components/SignUpProgress';
 import {colors, spacing, typography} from '../../theme';
+import {SIGN_UP_STEP_COUNT} from '../onboarding/signUpSteps';
 
 interface SignUpScreenViewProps {
   email: string;
@@ -28,7 +29,7 @@ interface SignUpScreenViewProps {
  * Sign up screen layout. Figma: "AUTH / Signup" (node 2114:79).
  *
  * Changes from Figma, all agreed by the team:
- * - The sign-up progress bar (step 1 of 5) under the header, to match the
+ * - The sign-up progress bar (step 1) under the header, to match the
  *   later sign-up steps.
  * - An "I'm 18 or older" checkbox instead of the "DATE OF BIRTH" field.
  * - The main button says "CONTINUE", not "CREATE ACCOUNT": the account is
@@ -56,7 +57,7 @@ export function SignUpScreenView({
       header={
         <>
           <ScreenHeader title="MOTION / CREATE ACCOUNT" onBack={onBack} />
-          <SignUpProgress step={1} total={5} />
+          <SignUpProgress step={1} total={SIGN_UP_STEP_COUNT} />
         </>
       }>
       <Text style={styles.step}>01 / CREATE ACCOUNT</Text>

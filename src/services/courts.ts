@@ -24,7 +24,7 @@ const STUB_COURTS: readonly Court[] = [
   {id: 6, name: 'UW IMA'},
 ];
 
-/** Every court, for the "preferred courts" picker. Works while signed out. */
+/** Every court, for the home court picker. Works while signed out. */
 export async function listCourts(): Promise<Court[]> {
   await fakeDelay();
   return [...STUB_COURTS];
