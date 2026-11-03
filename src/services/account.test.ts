@@ -1,66 +1,86 @@
 import {createAccount, type CreateAccountInput} from './account';
-import {getSession, signOut} from './auth';
-import {getMyProfile, STARTING_ELO_BY_LEVEL} from './profile';
+import {supabase} from './supabase';
 
-/** A valid sign-up; each test overrides what it needs. */
+jest.mock('./supabase', () => ({
+  supabase: {
+    auth: {
+      signUp: jest.fn(),
+      signInWithPassword: jest.fn(),
+      signOut: jest.fn(),
+      getSession: jest.fn(),
+    },
+    rpc: jest.fn(),
+    from: jest.fn(),
+  },
+}));
+
+const m = supabase as unknown as {
+  auth: Record<'signUp' | 'signInWithPassword' | 'signOut' | 'getSession', jest.Mock>;
+  rpc: jest.Mock;
+  from: jest.Mock;
+};
+
+const row = {
+  user_id: 'u1', username: 'hooper2', elo: 800, open_to_challenges: true,
+  position: null, height_cm: 188, tags: null, home_court_id: 6,
+  onboarded_at: '2026-11-03T18:00:00Z', appeal_count: 0,
+};
+
 function signUp(changes: Partial<CreateAccountInput> = {}): CreateAccountInput {
   return {
-    email: 'new@uw.edu',
-    password: 'secret1',
-    confirmedAdult: true,
-    username: 'new_player',
-    level: 'beginner',
-    ...changes,
+    email: 'new@uw.edu', password: 'secret1', confirmedAdult: true,
+    username: 'hooper2', level: 'intermediate', ...changes,
   };
 }
 
+beforeEach(() => {
+  jest.resetAllMocks();
+  m.auth.signUp.mockResolvedValue({data: {session: {}}, error: null});
+  m.auth.signOut.mockResolvedValue({error: null});
+  m.auth.getSession.mockResolvedValue({data: {session: {user: {id: 'u1'}}}});
+  m.rpc.mockResolvedValue({data: row, error: null});
+  const single = jest.fn().mockResolvedValue({data: row, error: null});
+  m.from.mockReturnValue({select: () => ({eq: () => ({single})})});
+});
+
 describe('createAccount', () => {
-  afterEach(async () => {
-    await signOut();
+  it('rejects an underage player before touching Supabase', async () => {
+    await expect(createAccount(signUp({confirmedAdult: false}))).rejects.toMatchObject({code: 'underage'});
+    expect(m.auth.signUp).not.toHaveBeenCalled();
   });
 
-  it('rejects an underage player before saving an account', async () => {
-    await expect(
-      createAccount(signUp({email: 'young@uw.edu', confirmedAdult: false})),
-    ).rejects.toMatchObject({
-      code: 'underage',
-      message: 'You must be 18 or older to use Motion.',
+  it('signs up, saves the profile, and returns it', async () => {
+    const profile = await createAccount(signUp({heightCm: 188, homeCourtId: 6}));
+    expect(m.rpc).toHaveBeenCalledWith('complete_profile', {
+      p_username: 'hooper2', p_level: 'intermediate', p_position: null,
+      p_height_cm: 188, p_tags: null, p_home_court_id: 6,
     });
-    expect(await getSession()).toBeNull();
+    expect(profile).toMatchObject({username: 'hooper2', elo: 800, heightCm: 188, homeCourtId: 6});
+    expect(m.auth.signOut).not.toHaveBeenCalled();
   });
 
-  it('creates the account, saves the profile, and signs in', async () => {
-    const profile = await createAccount(
-      signUp({
-        email: 'hooper2@uw.edu',
-        username: 'hooper2',
-        level: 'intermediate',
-        heightCm: 188,
-        homeCourtId: 6,
-      }),
-    );
-
-    expect(profile).toMatchObject({
-      username: 'hooper2',
-      elo: STARTING_ELO_BY_LEVEL.intermediate,
-      heightCm: 188,
-      homeCourtId: 6,
-    });
-    expect((await getSession())?.user.email).toBe('hooper2@uw.edu');
-    expect(await getMyProfile()).toEqual(profile);
+  it('reports an email that belongs to someone else', async () => {
+    m.auth.signUp.mockResolvedValue({data: {}, error: {code: 'user_already_exists', message: 'x'}});
+    m.auth.signInWithPassword.mockResolvedValue({error: {code: 'invalid_credentials', message: 'x'}});
+    await expect(createAccount(signUp())).rejects.toMatchObject({code: 'email_taken'});
+    expect(m.rpc).not.toHaveBeenCalled();
   });
 
-  it('reports an already-registered email', async () => {
-    await expect(
-      createAccount(signUp({email: 'taken@uw.edu', username: 'fresh_one'})),
-    ).rejects.toMatchObject({code: 'email_taken'});
-    expect(await getSession()).toBeNull();
+  it('reports a taken username and signs out', async () => {
+    m.rpc.mockResolvedValue({data: null, error: {code: '23505', message: 'duplicate'}});
+    await expect(createAccount(signUp())).rejects.toMatchObject({code: 'username_taken'});
+    expect(m.auth.signOut).toHaveBeenCalled();
   });
 
-  it('reports a taken username, ignoring case', async () => {
-    await expect(
-      createAccount(signUp({email: 'other@uw.edu', username: 'Hooper'})),
-    ).rejects.toMatchObject({code: 'username_taken'});
-    expect(await getSession()).toBeNull();
+  it('finishes a half-done earlier attempt with the same email and password', async () => {
+    m.auth.signUp.mockResolvedValue({data: {}, error: {code: 'user_already_exists', message: 'x'}});
+    m.auth.signInWithPassword.mockResolvedValue({error: null});
+    await expect(createAccount(signUp())).resolves.toMatchObject({username: 'hooper2'});
+  });
+
+  it('treats "already complete" with a different username as email_taken', async () => {
+    m.rpc.mockResolvedValue({data: null, error: {code: '55000', message: 'done'}});
+    await expect(createAccount(signUp({username: 'someone_else'}))).rejects.toMatchObject({code: 'email_taken'});
+    expect(m.auth.signOut).toHaveBeenCalled();
   });
 });
