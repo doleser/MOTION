@@ -2,7 +2,12 @@ import {StyleSheet, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {MotionButton} from '../../components/MotionButton';
+import {VideoBackground} from '../../components/VideoBackground';
 import {colors, sizes, spacing, typography} from '../../theme';
+
+// Bundled with the app (no download). The poster is the clip's first frame.
+const WELCOME_VIDEO = require('../../../assets/videos/welcome.mp4');
+const WELCOME_POSTER = require('../../../assets/images/welcome-poster.jpg');
 
 interface WelcomeScreenViewProps {
   onGetStarted: () => void;
@@ -18,9 +23,8 @@ interface WelcomeScreenViewProps {
 export function WelcomeScreenView({onGetStarted, onLogIn}: WelcomeScreenViewProps) {
   return (
     <View style={styles.screen}>
-      {/* Background layer. Plain black for now; a black-and-white video of
-          pickup games (plus a dark overlay for readability) will go here. */}
-      <View style={[StyleSheet.absoluteFill, styles.background]} />
+      {/* Black-and-white pickup footage behind the logo and buttons. */}
+      <VideoBackground source={WELCOME_VIDEO} poster={WELCOME_POSTER} />
 
       <SafeAreaView style={styles.content} edges={['top', 'bottom']}>
         {/* Logo, centered in the space above the buttons. */}
@@ -49,9 +53,6 @@ export function WelcomeScreenView({onGetStarted, onLogIn}: WelcomeScreenViewProp
 const styles = StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: colors.bg,
-  },
-  background: {
     backgroundColor: colors.bg,
   },
   content: {
