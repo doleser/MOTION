@@ -15,6 +15,10 @@ export type ServiceErrorCode =
   | 'not_signed_in'
   | 'invalid_username'
   | 'username_taken'
+  | 'too_far'
+  | 'court_unavailable'
+  | 'already_checked_in'
+  | 'not_checked_in'
   | 'court_not_found';
 
 export class ServiceError extends Error {
@@ -99,6 +103,32 @@ export function fromCompleteProfileError(
         : error;
     case '55000':
       return null;
+    default:
+      return error;
+  }
+}
+
+/**
+ * Turns a check_in or check_out error into a ServiceError the court screen
+ * can show. Anything else (including "Court and location are required.") is
+ * returned as is, so getErrorMessage shows the generic message.
+ */
+export function fromCheckInError(error: PostgrestError): Error {
+  if (error.code === '42501') {
+    return new ServiceError('not_signed_in', 'Not signed in.');
+  }
+  if (error.code !== '22023') {
+    return error;
+  }
+  switch (error.message) {
+    case 'Too far from the court.':
+      return new ServiceError('too_far', error.message);
+    case 'Court is not available.':
+      return new ServiceError('court_unavailable', error.message);
+    case 'Already checked in.':
+      return new ServiceError('already_checked_in', error.message);
+    case 'Not checked in.':
+      return new ServiceError('not_checked_in', error.message);
     default:
       return error;
   }
