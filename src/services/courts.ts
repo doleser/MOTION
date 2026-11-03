@@ -1,15 +1,22 @@
 /**
- * Courts service (STUB).
+ * Courts service.
  *
- * A fake stand-in for the `courts` table and the `nearby_courts` function.
- * The real version will call Supabase; screens won't change.
+ * listCourts reads the `courts` table in Supabase. The map functions are
+ * still STUBS with fake data until the backend has what they need; screens
+ * won't change when they switch over:
  *
  *   getNearbyCourts -> supabase.rpc('nearby_courts', {lat, lng, radius, max_results})
+ *                      (needs nearby_courts to return latitude/longitude)
  *   getCourt        -> supabase.rpc('get_court', {court_id})  (not written yet)
  *   subscribeToCourtCounts -> Realtime broadcast on 'court:<id>' (not set up yet)
  */
 import {ServiceError} from './errors';
-import {fakeDelay} from './fakeDelay';
+import {supabase} from './supabase';
+
+/** Stub only: waits like a network request would. */
+function fakeDelay(ms = 400): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
 
 export interface Court {
   id: number;
@@ -159,10 +166,20 @@ function playerCountOf(courtId: number): number {
 
 // ---------- Public API ----------
 
-/** Every court, for the home court picker. Works while signed out. */
+/**
+ * Every open court, for the home court picker, in the order they were added.
+ * Works while signed out (anyone can read courts).
+ */
 export async function listCourts(): Promise<Court[]> {
-  await fakeDelay();
-  return STUB_COURTS.map(({id, name}) => ({id, name}));
+  const {data, error} = await supabase
+    .from('courts')
+    .select('court_id, name')
+    .eq('status', 'active')
+    .order('court_id');
+  if (error) {
+    throw error;
+  }
+  return data.map((row) => ({id: row.court_id, name: row.name}));
 }
 
 /**

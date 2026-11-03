@@ -55,7 +55,7 @@ export type GetAvailableHandles = (handles: string[]) => Promise<string[]>;
  * suggestion) rather than guessing.
  *
  * `getAvailable` is passed in so tests can use a fake; the screen passes the
- * real service, which will ask the database once the backend is connected.
+ * real service, which asks the database.
  */
 export async function findFreeHandle(
   handle: string,

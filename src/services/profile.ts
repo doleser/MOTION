@@ -1,14 +1,10 @@
 /**
- * Profile service (STUB).
- *
- * A fake, in-memory stand-in for the `profiles` table. The real version will
- * call Supabase; screens won't change.
+ * Profile service: the `profiles` table and username checks, using Supabase.
  *
  * New profiles are NOT created here; see `createAccount` in account.ts.
  */
-import {peekSession} from './auth';
 import {ServiceError} from './errors';
-import {fakeDelay} from './fakeDelay';
+import {supabase} from './supabase';
 
 export type SkillLevel = 'beginner' | 'intermediate' | 'advanced' | 'skipped';
 
@@ -23,31 +19,20 @@ export interface Profile {
   tags?: string[];
   /** The court the player usually plays at (id from the courts service). */
   homeCourtId?: number;
+  onboardedAt?: Date;
+  appealCount: number;
 }
-
-/** The profile answers collected during sign-up. */
-export interface CreateProfileInput {
-  username: string;
-  level: SkillLevel;
-  position?: string;
-  heightCm?: number;
-  tags?: string[];
-  homeCourtId?: number;
-}
-
-/** Same as the `elo` column default in the database. */
-const DEFAULT_ELO = 1200;
 
 /**
- * Starting Elo for each self-assessed level. The ONE place this mapping
- * lives: the StartingElo preview and the createAccount stub both read it.
+ * Starting Elo for each self-assessed level, shown on the StartingElo
+ * preview. Must match `complete_profile` in the database, which sets the
+ * real starting Elo when the account is created.
  *
  * Skipping starts in the middle (800), so skipping is never better than
  * answering honestly.
  *
  * TODO(team): not final. The design doc also mentions "clamp to 900-1500",
- * which contradicts these. The real number will come from the backend
- * (complete_profile still says skipped = 1200 and needs the same change).
+ * which contradicts these.
  */
 export const STARTING_ELO_BY_LEVEL: Readonly<Record<SkillLevel, number>> = {
   beginner: 400,
@@ -110,54 +95,34 @@ export function getUsernameError(username: string): string | null {
   return 'Use 3-16 letters, numbers, or underscores.';
 }
 
-// ---------- Fake in-memory state ----------
-
-/** Pretend these belong to other players. */
-const TAKEN_USERNAMES = ['hooper', 'admin'];
-
-/**
- * Pretend someone grabs these while you're onboarding: they pass the check
- * on ChooseHandle but fail at createAccount. Use "sniped" to test it.
- */
-const TAKEN_AT_SAVE_USERNAMES = ['sniped'];
-
-const profilesByUserId = new Map<string, Profile>();
-
-/** True if any player has this username, ignoring case. */
-function isUsernameTaken(username: string): boolean {
-  const lower = username.toLowerCase();
-  if (TAKEN_USERNAMES.includes(lower)) {
-    return true;
-  }
-  for (const profile of profilesByUserId.values()) {
-    if (profile.username?.toLowerCase() === lower) {
-      return true;
-    }
-  }
-  return false;
-}
-
 // ---------- Public API ----------
 
 /** The signed-in user's profile. */
 export async function getMyProfile(): Promise<Profile> {
-  await fakeDelay();
-  const session = peekSession();
+  const {data: {session}} = await supabase.auth.getSession();
   if (!session) {
     throw new ServiceError('not_signed_in', 'You need to be signed in.');
   }
-  const userId = session.user.id;
-
-  // Every account gets its profile at creation, so this fallback (matching
-  // the database default row) shouldn't be needed.
-  return (
-    profilesByUserId.get(userId) ?? {
-      userId,
-      username: null,
-      elo: DEFAULT_ELO,
-      openToChallenges: true,
-    }
-  );
+  const {data, error} = await supabase
+    .from('profiles')
+    .select(
+      'user_id, username, elo, open_to_challenges, position, height_cm, tags, home_court_id, onboarded_at, appeal_count',
+    )
+    .eq('user_id', session.user.id)
+    .single();
+  if (error) throw error;
+  return {
+    userId: data.user_id,
+    username: data.username,
+    elo: data.elo,
+    openToChallenges: data.open_to_challenges,
+    position: data.position ?? undefined,
+    heightCm: data.height_cm ?? undefined,
+    tags: data.tags ?? undefined,
+    homeCourtId: data.home_court_id ?? undefined,
+    onboardedAt: data.onboarded_at ? new Date(data.onboarded_at) : undefined,
+    appealCount: data.appeal_count,
+  };
 }
 
 /**
@@ -165,12 +130,13 @@ export async function getMyProfile(): Promise<Profile> {
  * Throws 'invalid_username' if it breaks the format rule.
  */
 export async function isUsernameAvailable(username: string): Promise<boolean> {
-  await fakeDelay();
   const formatError = getUsernameError(username);
   if (formatError) {
     throw new ServiceError('invalid_username', formatError);
   }
-  return !isUsernameTaken(username);
+  const {data, error} = await supabase.rpc('is_username_available', {name: username});
+  if (error) throw error;
+  return data;
 }
 
 /**
@@ -182,44 +148,26 @@ export async function isUsernameAvailable(username: string): Promise<boolean> {
  * database function, proposed as `available_usernames(names text[])`
  * (not in the backend yet; see the note for Owen).
  */
+// Same contract as before (list of free names, input order). One request per
+// candidate until the batch function exists on the backend.
 export async function getAvailableUsernames(usernames: string[]): Promise<string[]> {
-  await fakeDelay();
-  return usernames.filter(
-    (username) => getUsernameError(username) === null && !isUsernameTaken(username),
+  const valid = usernames.filter((name) => getUsernameError(name) === null);
+  const checks = await Promise.all(
+    valid.map(async (name) => ({name, free: await isUsernameAvailable(name)})),
   );
+  return checks.filter((c) => c.free).map((c) => c.name);
 }
 
-// ---------- Stub-only helpers (used by account.ts) ----------
-
-/** Throws if a new profile can't use this username. */
-export function stubCheckNewUsername(username: string): void {
-  const formatError = getUsernameError(username);
-  if (formatError) {
-    throw new ServiceError('invalid_username', formatError);
-  }
-  if (
-    isUsernameTaken(username) ||
-    TAKEN_AT_SAVE_USERNAMES.includes(username.toLowerCase())
-  ) {
-    throw new ServiceError(
-      'username_taken',
-      `Someone just took "${username}". Pick another username.`,
-    );
-  }
+// New: the first free name, or null. Needs the first_available_username migration.
+export async function getFirstAvailableUsername(names: string[]): Promise<string | null> {
+  const {data, error} = await supabase.rpc('first_available_username', {p_names: names});
+  if (error) throw error;
+  return data;
 }
 
-/** Saves a new profile with its starting Elo. Call stubCheckNewUsername first. */
-export function stubInsertProfile(
-  userId: string,
-  input: CreateProfileInput,
-): Profile {
-  const {level, ...details} = input;
-  const profile: Profile = {
-    userId,
-    elo: STARTING_ELO_BY_LEVEL[level],
-    openToChallenges: true,
-    ...details,
-  };
-  profilesByUserId.set(userId, profile);
-  return profile;
+// New: needs the increment_appeal_count migration.
+export async function incrementAppealCount(): Promise<number> {
+  const {data, error} = await supabase.rpc('increment_appeal_count');
+  if (error) throw error;
+  return data;
 }

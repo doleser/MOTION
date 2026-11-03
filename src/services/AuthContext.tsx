@@ -4,8 +4,8 @@
  * Wrap the app in <AuthProvider>, then read the state anywhere with
  * `useAuth()`. The root navigator uses it to pick Auth, Main, or FinishSetup.
  *
- * This file talks only to the auth and profile services, never to Supabase,
- * so it stays the same when the stubs are replaced.
+ * This file talks only to the auth and profile services, never to Supabase
+ * directly.
  */
 import {
   createContext,
@@ -53,11 +53,15 @@ export function AuthProvider({children}: {children: ReactNode}) {
   // The user we're currently showing. A profile request that finishes after
   // that user signed out is ignored, so we never show someone else's profile.
   const currentUserId = useRef<string | null>(null);
+  // Counts profile requests. Only the newest one is used, so a slow, older
+  // request (e.g. from before sign-up saved the username) can't win.
+  const latestLoad = useRef(0);
 
   const loadProfile = useCallback(async (userId: string) => {
+    const loadNumber = ++latestLoad.current;
     try {
       const loaded = await getMyProfile();
-      if (currentUserId.current === userId) {
+      if (currentUserId.current === userId && loadNumber === latestLoad.current) {
         setProfile(loaded);
       }
     } catch (error) {
