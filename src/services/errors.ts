@@ -18,7 +18,8 @@ export type ServiceErrorCode =
   | 'too_far'
   | 'court_unavailable'
   | 'already_checked_in'
-  | 'not_checked_in';
+  | 'not_checked_in'
+  | 'court_not_found';
 
 export class ServiceError extends Error {
   readonly code: ServiceErrorCode;
