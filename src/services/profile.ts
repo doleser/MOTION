@@ -6,9 +6,8 @@
  *
  * New profiles are NOT created here; see `createAccount` in account.ts.
  */
-import {peekSession} from './auth';
 import {ServiceError} from './errors';
-import {fakeDelay} from './fakeDelay';
+import {supabase} from './supabase';
 
 export type SkillLevel = 'beginner' | 'intermediate' | 'advanced' | 'skipped';
 
@@ -23,6 +22,8 @@ export interface Profile {
   tags?: string[];
   /** The court the player usually plays at (id from the courts service). */
   homeCourtId?: number;
+  onboardedAt?: Date;
+  appealCount: number;
 }
 
 /** The profile answers collected during sign-up. */
@@ -35,8 +36,6 @@ export interface CreateProfileInput {
   homeCourtId?: number;
 }
 
-/** Same as the `elo` column default in the database. */
-const DEFAULT_ELO = 1200;
 
 /**
  * Starting Elo for each self-assessed level. The ONE place this mapping
@@ -141,23 +140,30 @@ function isUsernameTaken(username: string): boolean {
 
 /** The signed-in user's profile. */
 export async function getMyProfile(): Promise<Profile> {
-  await fakeDelay();
-  const session = peekSession();
+  const {data: {session}} = await supabase.auth.getSession();
   if (!session) {
     throw new ServiceError('not_signed_in', 'You need to be signed in.');
   }
-  const userId = session.user.id;
-
-  // Every account gets its profile at creation, so this fallback (matching
-  // the database default row) shouldn't be needed.
-  return (
-    profilesByUserId.get(userId) ?? {
-      userId,
-      username: null,
-      elo: DEFAULT_ELO,
-      openToChallenges: true,
-    }
-  );
+  const {data, error} = await supabase
+    .from('profiles')
+    .select(
+      'user_id, username, elo, open_to_challenges, position, height_cm, tags, home_court_id, onboarded_at, appeal_count',
+    )
+    .eq('user_id', session.user.id)
+    .single();
+  if (error) throw error;
+  return {
+    userId: data.user_id,
+    username: data.username,
+    elo: data.elo,
+    openToChallenges: data.open_to_challenges,
+    position: data.position ?? undefined,
+    heightCm: data.height_cm ?? undefined,
+    tags: data.tags ?? undefined,
+    homeCourtId: data.home_court_id ?? undefined,
+    onboardedAt: data.onboarded_at ? new Date(data.onboarded_at) : undefined,
+    appealCount: data.appeal_count,
+  };
 }
 
 /**
@@ -165,12 +171,13 @@ export async function getMyProfile(): Promise<Profile> {
  * Throws 'invalid_username' if it breaks the format rule.
  */
 export async function isUsernameAvailable(username: string): Promise<boolean> {
-  await fakeDelay();
   const formatError = getUsernameError(username);
   if (formatError) {
     throw new ServiceError('invalid_username', formatError);
   }
-  return !isUsernameTaken(username);
+  const {data, error} = await supabase.rpc('is_username_available', {name: username});
+  if (error) throw error;
+  return data;
 }
 
 /**
@@ -182,11 +189,28 @@ export async function isUsernameAvailable(username: string): Promise<boolean> {
  * database function, proposed as `available_usernames(names text[])`
  * (not in the backend yet; see the note for Owen).
  */
+// Same contract as before (list of free names, input order). One request per
+// candidate until the batch function exists on the backend.
 export async function getAvailableUsernames(usernames: string[]): Promise<string[]> {
-  await fakeDelay();
-  return usernames.filter(
-    (username) => getUsernameError(username) === null && !isUsernameTaken(username),
+  const valid = usernames.filter((name) => getUsernameError(name) === null);
+  const checks = await Promise.all(
+    valid.map(async (name) => ({name, free: await isUsernameAvailable(name)})),
   );
+  return checks.filter((c) => c.free).map((c) => c.name);
+}
+
+// New: the first free name, or null. Needs the first_available_username migration.
+export async function getFirstAvailableUsername(names: string[]): Promise<string | null> {
+  const {data, error} = await supabase.rpc('first_available_username', {p_names: names});
+  if (error) throw error;
+  return data;
+}
+
+// New: needs the increment_appeal_count migration.
+export async function incrementAppealCount(): Promise<number> {
+  const {data, error} = await supabase.rpc('increment_appeal_count');
+  if (error) throw error;
+  return data;
 }
 
 // ---------- Stub-only helpers (used by account.ts) ----------
@@ -214,12 +238,13 @@ export function stubInsertProfile(
   input: CreateProfileInput,
 ): Profile {
   const {level, ...details} = input;
-  const profile: Profile = {
-    userId,
-    elo: STARTING_ELO_BY_LEVEL[level],
-    openToChallenges: true,
-    ...details,
-  };
+   const profile: Profile = {
+     userId,
+     elo: STARTING_ELO_BY_LEVEL[level],
+     openToChallenges: true,
+     appealCount: 0,
+     ...details,
+   };
   profilesByUserId.set(userId, profile);
   return profile;
 }

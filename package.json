@@ -52,6 +52,7 @@
     "zod": "^4.6.6"
   },
   "jest": {
-    "preset": "jest-expo"
-  }
+     "preset": "jest-expo",
+     "setupFiles": ["./jest.setup.js"]
+   }
 }

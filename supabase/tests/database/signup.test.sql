@@ -66,8 +66,8 @@ select set_config('request.jwt.claims',
 
 select is(
   (public.complete_profile(p_username => 'Dev_403', p_level => 'skipped')).elo,
-  1200,
-  'skipping the self-assessment starts at 1200'
+  800,
+  'skipping the self-assessment starts at 800'
 );
 
 select results_eq(
@@ -178,7 +178,7 @@ select throws_ok(
 select results_eq(
   $$ select username, elo, onboarded_at from public.profiles
       where user_id = '55555555-5555-5555-5555-555555555555' $$,
-  $$ values (null::text, 1200, null::timestamptz) $$,
+  $$ values (null::text, 800, null::timestamptz) $$,
   'failed calls leave the profile unchanged'
 );
 

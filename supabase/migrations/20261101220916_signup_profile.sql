@@ -59,7 +59,7 @@ begin
     when 'beginner'     then 400
     when 'intermediate' then 800
     when 'advanced'     then 1200
-    when 'skipped'      then 1200
+    when 'skipped'      then 800
   end;
   if v_elo is null then
     raise exception 'Unknown level: %', p_level using errcode = '22023';

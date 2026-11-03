@@ -1,3 +1,5 @@
+import type {AuthError, PostgrestError} from '@supabase/supabase-js';
+
 /**
  * The one error type every service throws.
  *
@@ -43,4 +45,60 @@ export function isServiceError(
   return (
     error instanceof ServiceError && (code === undefined || error.code === code)
   );
+}
+/**
+ * Turns a Supabase auth error into a ServiceError the screens understand.
+ * Anything unmapped (rate limits, outages) is returned as is, so
+ * getErrorMessage shows the generic message.
+ */
+export function fromAuthError(error: AuthError): Error {
+  switch (error.code) {
+    case 'user_already_exists':
+    case 'email_exists':
+      return new ServiceError(
+        'email_taken',
+        'That email is already registered. Try logging in instead.',
+      );
+    case 'weak_password':
+      return new ServiceError('weak_password', 'Choose a stronger password.');
+    case 'email_address_invalid':
+    case 'validation_failed':
+      return new ServiceError('invalid_email', 'Enter a valid email address.');
+    case 'invalid_credentials':
+      return new ServiceError('invalid_credentials', 'Incorrect email or password.');
+    default:
+      return error;
+  }
+}
+
+/**
+ * Turns a complete_profile error into a ServiceError. Returns null when the
+ * profile was already complete (55000); the caller decides what that means.
+ * Errors that point at a bug on our side are returned as is (generic message).
+ */
+export function fromCompleteProfileError(
+  error: PostgrestError,
+  username: string,
+): Error | null {
+  switch (error.code) {
+    case '23505':
+      return new ServiceError(
+        'username_taken',
+        `Someone just took "${username}". Pick another username.`,
+      );
+    case '22023':
+      // 'Username is required.' vs 'Unknown level: ...' (a bug).
+      return /username/i.test(error.message)
+        ? new ServiceError('invalid_username', 'Pick a username to continue.')
+        : error;
+    case '23514':
+      // username_format vs the position / height / tags checks (bugs).
+      return error.message.includes('username_format')
+        ? new ServiceError('invalid_username', 'Use 3-16 letters, numbers, or underscores.')
+        : error;
+    case '55000':
+      return null;
+    default:
+      return error;
+  }
 }
