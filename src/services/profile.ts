@@ -1,8 +1,5 @@
 /**
- * Profile service (STUB).
- *
- * A fake, in-memory stand-in for the `profiles` table. The real version will
- * call Supabase; screens won't change.
+ * Profile service: the `profiles` table and username checks, using Supabase.
  *
  * New profiles are NOT created here; see `createAccount` in account.ts.
  */
@@ -26,27 +23,16 @@ export interface Profile {
   appealCount: number;
 }
 
-/** The profile answers collected during sign-up. */
-export interface CreateProfileInput {
-  username: string;
-  level: SkillLevel;
-  position?: string;
-  heightCm?: number;
-  tags?: string[];
-  homeCourtId?: number;
-}
-
-
 /**
- * Starting Elo for each self-assessed level. The ONE place this mapping
- * lives: the StartingElo preview and the createAccount stub both read it.
+ * Starting Elo for each self-assessed level, shown on the StartingElo
+ * preview. Must match `complete_profile` in the database, which sets the
+ * real starting Elo when the account is created.
  *
  * Skipping starts in the middle (800), so skipping is never better than
  * answering honestly.
  *
  * TODO(team): not final. The design doc also mentions "clamp to 900-1500",
- * which contradicts these. The real number will come from the backend
- * (complete_profile still says skipped = 1200 and needs the same change).
+ * which contradicts these.
  */
 export const STARTING_ELO_BY_LEVEL: Readonly<Record<SkillLevel, number>> = {
   beginner: 400,
@@ -107,33 +93,6 @@ export function getUsernameError(username: string): string | null {
     return null;
   }
   return 'Use 3-16 letters, numbers, or underscores.';
-}
-
-// ---------- Fake in-memory state ----------
-
-/** Pretend these belong to other players. */
-const TAKEN_USERNAMES = ['hooper', 'admin'];
-
-/**
- * Pretend someone grabs these while you're onboarding: they pass the check
- * on ChooseHandle but fail at createAccount. Use "sniped" to test it.
- */
-const TAKEN_AT_SAVE_USERNAMES = ['sniped'];
-
-const profilesByUserId = new Map<string, Profile>();
-
-/** True if any player has this username, ignoring case. */
-function isUsernameTaken(username: string): boolean {
-  const lower = username.toLowerCase();
-  if (TAKEN_USERNAMES.includes(lower)) {
-    return true;
-  }
-  for (const profile of profilesByUserId.values()) {
-    if (profile.username?.toLowerCase() === lower) {
-      return true;
-    }
-  }
-  return false;
 }
 
 // ---------- Public API ----------
@@ -211,40 +170,4 @@ export async function incrementAppealCount(): Promise<number> {
   const {data, error} = await supabase.rpc('increment_appeal_count');
   if (error) throw error;
   return data;
-}
-
-// ---------- Stub-only helpers (used by account.ts) ----------
-
-/** Throws if a new profile can't use this username. */
-export function stubCheckNewUsername(username: string): void {
-  const formatError = getUsernameError(username);
-  if (formatError) {
-    throw new ServiceError('invalid_username', formatError);
-  }
-  if (
-    isUsernameTaken(username) ||
-    TAKEN_AT_SAVE_USERNAMES.includes(username.toLowerCase())
-  ) {
-    throw new ServiceError(
-      'username_taken',
-      `Someone just took "${username}". Pick another username.`,
-    );
-  }
-}
-
-/** Saves a new profile with its starting Elo. Call stubCheckNewUsername first. */
-export function stubInsertProfile(
-  userId: string,
-  input: CreateProfileInput,
-): Profile {
-  const {level, ...details} = input;
-   const profile: Profile = {
-     userId,
-     elo: STARTING_ELO_BY_LEVEL[level],
-     openToChallenges: true,
-     appealCount: 0,
-     ...details,
-   };
-  profilesByUserId.set(userId, profile);
-  return profile;
 }
