@@ -25,8 +25,8 @@ select is(
 select results_eq(
   $$ select username, elo, open_to_challenges from public.profiles
       where user_id = '11111111-1111-1111-1111-111111111111' $$,
-  $$ values (null::text, 1200, true) $$,
-  'new profile starts with no username, elo 1200, open to challenges'
+  $$ values (null::text, 800, true) $$,
+  'new profile starts with no username, elo 800, open to challenges'
 );
 
 -- ---------------------------------------------------------
