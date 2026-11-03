@@ -10,7 +10,8 @@ interface PlayerIdentityProps {
 }
 
 /**
- * A player's initials square, name, and a small details line.
+ * A square with the first letter of the player's name, the name, and a small
+ * details line.
  * Figma: "Player identity" on PROFILE / You.
  */
 export function PlayerIdentity({name, details}: PlayerIdentityProps) {
@@ -18,7 +19,7 @@ export function PlayerIdentity({name, details}: PlayerIdentityProps) {
     <View style={styles.row}>
       {/* Decorative: the name next to it already says who this is. */}
       <View style={styles.avatar} accessibilityElementsHidden importantForAccessibility="no">
-        <Text style={styles.initials}>{name.slice(0, 2).toUpperCase()}</Text>
+        <Text style={styles.initials}>{name.slice(0, 1).toUpperCase()}</Text>
       </View>
       <View style={styles.text}>
         <Text accessibilityRole="header" numberOfLines={1} adjustsFontSizeToFit style={styles.name}>

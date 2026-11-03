@@ -25,10 +25,10 @@ interface PlayerRecord extends WinLoss {
  * TODO: replace with real data from the backend (same shape).
  */
 const FAKE_RECORD: PlayerRecord = {
-  wins: 26,
-  losses: 14,
-  streak: {result: 'W', count: 3},
-  recentResults: ['W', 'L', 'W', 'W', 'W'],
+  wins: 0,
+  losses: 0,
+  streak: null,
+  recentResults: [],
 };
 
 /**
