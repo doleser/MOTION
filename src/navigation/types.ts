@@ -48,9 +48,16 @@ export type AuthStackParamList = {
 // ---------- Main (signed in, with a username) ----------
 
 export type MainTabParamList = {
-  Map: undefined;
+  /** The Map tab is a stack, so Court Details opens with the tab bar still showing. */
+  Map: NavigatorScreenParams<MapStackParamList> | undefined;
   Play: undefined;
   Profile: undefined;
+};
+
+/** Screens inside the Map tab. */
+export type MapStackParamList = {
+  MapHome: undefined;
+  CourtDetails: {courtId: number};
 };
 
 // ---------- Screen prop helpers ----------
@@ -71,6 +78,16 @@ export type MainTabScreenProps<T extends keyof MainTabParamList> =
   CompositeScreenProps<
     BottomTabScreenProps<MainTabParamList, T>,
     RootScreenProps<keyof RootStackParamList>
+  >;
+
+/**
+ * Map tab screens live inside the tabs, so their `navigation` prop knows
+ * about the Map stack, the tabs, and the root routes.
+ */
+export type MapScreenProps<T extends keyof MapStackParamList> =
+  CompositeScreenProps<
+    NativeStackScreenProps<MapStackParamList, T>,
+    MainTabScreenProps<'Map'>
   >;
 
 // Tells React Navigation our root param list, so the `useNavigation()` hook

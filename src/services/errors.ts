@@ -14,7 +14,8 @@ export type ServiceErrorCode =
   | 'invalid_credentials'
   | 'not_signed_in'
   | 'invalid_username'
-  | 'username_taken';
+  | 'username_taken'
+  | 'court_not_found';
 
 export class ServiceError extends Error {
   readonly code: ServiceErrorCode;
