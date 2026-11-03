@@ -36,8 +36,6 @@ export interface CreateProfileInput {
   homeCourtId?: number;
 }
 
-/** Same as the `elo` column default in the database. */
-const DEFAULT_ELO = 1200;
 
 /**
  * Starting Elo for each self-assessed level. The ONE place this mapping
