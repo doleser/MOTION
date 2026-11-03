@@ -1,10 +1,7 @@
 /**
- * Courts service (STUB).
- *
- * A fake stand-in for the `courts` table. The real version will call
- * Supabase (e.g. a nearby-courts function); screens won't change.
+ * Courts service: reads the `courts` table in Supabase.
  */
-import {fakeDelay} from './fakeDelay';
+import {supabase} from './supabase';
 
 export interface Court {
   id: number;
@@ -12,20 +9,17 @@ export interface Court {
 }
 
 /**
- * Same courts, in the same order, as supabase/seed.sql. The ids assume the
- * database numbers them 1, 2, 3... in insert order.
+ * Every open court, for the home court picker, in the order they were added.
+ * Works while signed out (anyone can read courts).
  */
-const STUB_COURTS: readonly Court[] = [
-  {id: 1, name: 'Denny Courts'},
-  {id: 2, name: 'Laurelhurst Half Court'},
-  {id: 3, name: 'Ravenna Park'},
-  {id: 4, name: 'Green Lake Half Court'},
-  {id: 5, name: 'Green Lake Full Court'},
-  {id: 6, name: 'UW IMA'},
-];
-
-/** Every court, for the home court picker. Works while signed out. */
 export async function listCourts(): Promise<Court[]> {
-  await fakeDelay();
-  return [...STUB_COURTS];
+  const {data, error} = await supabase
+    .from('courts')
+    .select('court_id, name')
+    .eq('status', 'active')
+    .order('court_id');
+  if (error) {
+    throw error;
+  }
+  return data.map((row) => ({id: row.court_id, name: row.name}));
 }

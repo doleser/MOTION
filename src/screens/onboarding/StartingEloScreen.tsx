@@ -78,7 +78,7 @@ function buildSummary(draft: OnboardingDraft, courts: Court[] | null): SignUpSum
  */
 export function StartingEloScreen({navigation}: AuthScreenProps<'StartingElo'>) {
   const {draft} = useOnboardingDraft();
-  const {setFinishingSignUp} = useAuth();
+  const {setFinishingSignUp, refreshProfile} = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
   const [courts, setCourts] = useState<Court[] | null>(null);
@@ -160,9 +160,13 @@ export function StartingEloScreen({navigation}: AuthScreenProps<'StartingElo'>) 
       return;
     }
 
-    // Signed in now. The location question pops up over the Creating
-    // account screen; then the root switches to the map (which also
-    // removes these screens and the draft).
+    // Signed in now. Supabase reported the sign-in before the profile was
+    // saved, so load it again to get the username (the root needs it to
+    // pick the map over FinishSetup).
+    await refreshProfile();
+    // The location question pops up over the Creating account screen; then
+    // the root switches to the map (which also removes these screens and
+    // the draft).
     await askForLocation();
     setFinishingSignUp(false);
   }
