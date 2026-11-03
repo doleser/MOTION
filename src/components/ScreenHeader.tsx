@@ -1,5 +1,5 @@
 import {Pressable, StyleSheet, Text, View} from 'react-native';
-import {LocalSvg} from 'react-native-svg/css';
+import {SvgIcon} from './SvgIcon';
 
 import {colors, opacity, sizes, spacing, typography} from '../theme';
 
@@ -27,7 +27,7 @@ export function ScreenHeader({title, onBack}: ScreenHeaderProps) {
           onPress={onBack}
           style={({pressed}) => [styles.back, pressed && styles.pressed]}>
           {/* The SVG file sets its own 24 x 24 size. */}
-          <LocalSvg asset={backIcon} />
+          <SvgIcon asset={backIcon} />
         </Pressable>
       ) : (
         // Empty space the size of the arrow, so the title doesn't move.

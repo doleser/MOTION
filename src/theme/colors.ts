@@ -17,6 +17,10 @@ export const colors = {
   yellow: '#F9EC4A',
   /** Outline of inputs and secondary buttons. Figma: motion-control-border */
   controlBorder: '#777777',
+  /** Dividers and map control outlines. Figma: line */
+  line: '#444444',
+  /** Map background behind the tiles. Figma: map */
+  map: '#191919',
   /**
    * Error messages. TEMPORARY: not in Figma. Picked to be readable on the
    * black background until Reed chooses an error color.
