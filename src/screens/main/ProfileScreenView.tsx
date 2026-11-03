@@ -3,6 +3,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {MotionButton} from '../../components/MotionButton';
 import {PlayerIdentity} from '../../components/PlayerIdentity';
+import {type GameResult, RecentForm} from '../../components/RecentForm';
 import {ScreenHeader} from '../../components/ScreenHeader';
 import {type Stat, StatPanel} from '../../components/StatPanel';
 import {colors, sizes, spacing, typography} from '../../theme';
@@ -13,6 +14,8 @@ interface ProfileScreenViewProps {
   details?: string;
   elo: number;
   stats: Stat[];
+  /** Most recent games, oldest first. */
+  recentResults: GameResult[];
   error: string | null;
   isSigningOut: boolean;
   onSignOut: () => void;
@@ -27,6 +30,7 @@ export function ProfileScreenView({
   details,
   elo,
   stats,
+  recentResults,
   error,
   isSigningOut,
   onSignOut,
@@ -52,6 +56,8 @@ export function ProfileScreenView({
         </View>
 
         <StatPanel stats={stats} />
+
+        <RecentForm results={recentResults} />
 
         <View style={styles.actions}>
           {error ? (

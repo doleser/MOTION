@@ -4,6 +4,7 @@ import {useLayoutEffect, useState} from 'react';
 import {Alert} from 'react-native';
 
 import {cmToInches, formatHeight} from '../../components/heightMath';
+import type {GameResult} from '../../components/RecentForm';
 import type {MainTabScreenProps} from '../../navigation/types';
 import {useAuth} from '../../services/AuthContext';
 import {signOut} from '../../services/auth';
@@ -14,7 +15,9 @@ import {formatWinRate, type WinLoss} from './winRate';
 
 interface PlayerRecord extends WinLoss {
   /** The current run of wins or losses, or null with no games yet. */
-  streak: {result: 'W' | 'L'; count: number} | null;
+  streak: {result: GameResult; count: number} | null;
+  /** Results of the most recent games, oldest first (up to 5 are shown). */
+  recentResults: GameResult[];
 }
 
 /**
@@ -25,6 +28,7 @@ const FAKE_RECORD: PlayerRecord = {
   wins: 26,
   losses: 14,
   streak: {result: 'W', count: 3},
+  recentResults: ['W', 'L', 'W', 'W', 'W'],
 };
 
 /**
@@ -77,6 +81,7 @@ export function ProfileScreen({navigation}: MainTabScreenProps<'Profile'>) {
           {value: formatWinRate(FAKE_RECORD), label: 'WIN RATE'},
           {value: formatStreak(FAKE_RECORD.streak), label: 'STREAK'},
         ]}
+        recentResults={FAKE_RECORD.recentResults}
         error={error}
         isSigningOut={isSigningOut}
         onSignOut={confirmSignOut}
