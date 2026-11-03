@@ -5,7 +5,6 @@ import {
   AccessibilityInfo,
   Animated,
   AppState,
-  Image,
   StyleSheet,
   View,
   type ImageSourcePropType,
@@ -17,10 +16,7 @@ import {useFade} from './useFade';
 interface VideoBackgroundProps {
   /** The clip, e.g. `require('../../assets/videos/welcome.mp4')`. */
   source: VideoSource;
-  /**
-   * A still of the clip's first frame. Shown until the video starts, and
-   * instead of the video when Reduce Motion is on.
-   */
+  /** A still of the clip's first frame, shown until the video starts. */
   poster: ImageSourcePropType;
   /** How dark the overlay on top is, from 0 (none) to 1 (solid black). */
   overlayOpacity?: number;
@@ -30,9 +26,18 @@ interface VideoBackgroundProps {
  * A muted, looping, full-screen video behind a screen's content, with a dark
  * overlay so text on top stays readable. Put it first inside a screen's
  * root view; it fills the screen and ignores touches.
+ *
+ * When Reduce Motion is on it draws nothing, so the screen's own (black)
+ * background shows instead.
  */
 export function VideoBackground({source, poster, overlayOpacity = 0.55}: VideoBackgroundProps) {
   const reduceMotion = useReduceMotion();
+
+  // Draw nothing while the setting is still being read (null) or when it's
+  // on, so a Reduce Motion user never sees the video or poster flash by.
+  if (reduceMotion !== false) {
+    return null;
+  }
 
   return (
     <View
@@ -41,11 +46,7 @@ export function VideoBackground({source, poster, overlayOpacity = 0.55}: VideoBa
       // Decorative: screen readers skip it.
       accessibilityElementsHidden
       importantForAccessibility="no-hide-descendants">
-      {reduceMotion ? (
-        <Image source={poster} style={StyleSheet.absoluteFill} resizeMode="cover" />
-      ) : (
-        <LoopingVideo source={source} poster={poster} />
-      )}
+      <LoopingVideo source={source} poster={poster} />
       <View style={[StyleSheet.absoluteFill, styles.overlay, {opacity: overlayOpacity}]} />
     </View>
   );
@@ -102,9 +103,12 @@ function LoopingVideo({source, poster}: Pick<VideoBackgroundProps, 'source' | 'p
   );
 }
 
-/** True when the phone's Reduce Motion setting is on. Updates if it changes. */
-function useReduceMotion(): boolean {
-  const [reduceMotion, setReduceMotion] = useState(false);
+/**
+ * True when the phone's Reduce Motion setting is on, null until it's been
+ * read (a split second). Updates if the setting changes.
+ */
+function useReduceMotion(): boolean | null {
+  const [reduceMotion, setReduceMotion] = useState<boolean | null>(null);
 
   useEffect(() => {
     let mounted = true;
