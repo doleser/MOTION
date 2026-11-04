@@ -6,7 +6,7 @@
 | :---- | :---- | :---- |
 | Reed Dolese | Doleser | UI/UX |
 | Joonho Choi | joonhoc7 | Backend |
-| Jace Baptista Allen | jacedba | Backend |
+| Jace Baptista-Allan | jacedba | Backend |
 | Owen Jennings | owenjenn | Database, PM |
 | Johnny Nguyễn | Dtn24 | Frontend |
 | Daniel Park | dpark005 | Frontend |
@@ -478,7 +478,7 @@ Team check-in, the team result variation, and Use cases 6 and 7 are future featu
 # 5. External Requirements
 
 - Robust: The server rejects handles with abnormal symbols or outside of the 3-16 character range, impossible or out-of-range scores, and check-ins from outside a 150 meter radius. If the network drops and causes an action to fail (completing a check-in, sending an invite, posting results, sending chats), the panel stays on screen and the user is prompted to retry the action.
-  - **To check:** automated testing for all rejection cases above, including on airplane mode or disconnected from a signal.
+  - **To check:** automated testing for all rejection cases above, including on airplane mode or disconnected from a signal. Invalid usernames are tested. Invalid scores and out-of-range check-ins are to be implemented.
 - Other people can run it: The README will have an Expo GO QR code, and the Supabase project is already hosted, so a tester can scan the code and reach the map. No desktop build is required.
 - Building: the README will cover cloning the repo, the .env file, starting a Supabase project, migrations, and Expo.
   - **To check:** a test subject outside the team can follow the README and build Motion with the seeded courts.
@@ -643,7 +643,7 @@ We foresee that the most challenging part about this project is getting everythi
 | Frontend, map (Daniel) | Expo app scaffolded with navigation **(2-4 hours)** | Map renders seeded courts **(2-4 hours)** | Court sheet and check-in screens (Use Case 6) **(3-5 hours)** | Live markers for courts on screen **(3-5 hours)** | Check-in edge states **(4-6 hours)** | Map and court sheet covered by end-to-end tests **(4-6 hours)** | Implement Feedback & Nice-To-Haves via CI/CD **(5-7 hours)** | Final Tests, Debugging, Deployment! **(4-6 hours)** |
 | Frontend, games (Johnny) | Navigation shell **(2 hours) Done** | Auth screens against the auth stub **(2-4 hours) In progress**  | Sign-up flow (Use Case 4) **(4-6 hours)**  | 1v1 challenge and post-result screens (Use Cases 1, 7) **(4-6 hours)** | King of the Court and fill-a-spot screens (Use Cases 3, 2) **(4-6 hours)** | Team match screens (Use Case 5), with end-to-end tests passing **(4-6 hours)** | Implement Feedback & Nice-To-Haves via CI/CD **(6-8 hours hours)** | Final Tests, Debugging, Deployment! **(4-6 hours)** |
 | Backend, contract (Joonho) | Supabase client and generated types **(2 hours) Complete** | Auth complete **(4-6 hours) In Progress** | Challenge and team-match function signatures on main **(2-4 hours)** | Challenge and result functions the screens call **(4-6 hours)** | Team-match functions **(4-6 hours)** | Contract covered by end-to-end tests **(6-8 hours)** | Implement Feedback & Nice-To-Haves via CI/CD **(4-6 hours)** | Final Tests, Debugging, Deployment! **(4-6 hours)** |
-| Backend, live state (Jace) | Function layout for game rules **(2 hours)**  | Check-in validation stub **(4 hours)** | Check-in expiry and automatic check-out **(4-6 hours)** | Elo and result confirmation **(5 hours)** | King of the Court session and queue **(5 hours)** | Live-state rules covered by tests **(4 hours)** | Implement Feedback & Nice-To-Haves via CI/CD **(4-6 hours)** | Final Tests, Debugging, Deployment! **(6-8 hours)** |
+| Backend, live state (Jace) | Function layout for game rules **(2 hours)** | Check-in validation stub **(4 hours)** | Check-in expiry and automatic check-out **(4-6 hours)** | Check-in the app can call: reject a reading outside 150 meters, check out, and close an expired open row **(5 hours)** | Elo and result confirmation **(5 hours)** | King of the Court session and queue **(5 hours)** | Live-state rules covered by tests (4 hours) and Implement Feedback & Nice-To-Haves via CI/CD **(4-6 hours)** | Final Tests, Debugging, Deployment! **(6-8 hours)** |
 | PM (Owen) | Tech Stack Finalized **(2-3 hours) Complete** | Set up basic CI **(4-6 hours) Complete** | Add Database to CI, run first tests **(5-7 hours) In Progress** | Write E2E checklist **(4-6 hours)** | Run E2E checklist **(6-8 hours)** | Recruit testers & Prep Usability Protocol **(4-6 hours)** | Run Usability tests & Document Feedback **(6-8 Hours)** | Write README & Prep Demo **(4-6 hours)** |
 | Database (Owen) | Draft Schema **(2-3 hours) Complete** | Write Migrations **(4-6 hours) Complete** | RLS Policies & PostGIS Queries Implemented **(5-7 hours) IP** | Configure Realtime & Review Seed Import **(3-4 hours)** | Fix Database bugs **(3-5 hours)** | Measure Performance against NFR standards **(2-4 hours)** | Migrate Feedback Changes **(3-5 hours)** | Deploy Production Database **(2-4 hours)** |
 
@@ -688,37 +688,6 @@ Before testing: RLS policies must exist before the first end-to-end slice.
 
 Before a full use case: Use case 3 can be run once the migration, RLS, `check_in`, the check-in service, and the court screen are all merged.
 
-## Test plan & bugs
-
-### Usability Tests - UI/UX
-
-We plan to have people outside of our group to try the app and do things like find a court, check in, and send a challenge. Everyone will try the same tasks without us walking them through it. We’ll keep track of whether they finish and where they get stuck or need help. We also want to see if people understand why they have to check in before seeing who is playing. We’ll also interview them afterward to see what they thought of the app and get their suggestions on what we could improve. We’ll also do the timing and block/report checks listed in our non functional requirements with ten testers. Along with finding courts and sending challenges these tasks will help show us whether new users can get through the main parts of the app without our help.
-
-### Backend/Database tests
-
-We test rating changes, court counts, check-in privacy, and new user journeys.
-
-- **Unit tests:** pgTAP: reject a check-in at 200 meters, reject a ranked Elo gap over 150, a void leaves `profiles.elo` unchanged, names stay hidden until check-in, and `confirm_result` writes `profiles.elo` and `elo_history` together. pgTAP checks each RLS policy with two test accounts (one checked in, one not). Jest tests each `services/` module with Supabase.
-- **Integration:** GitHub Actions runs that pgTAP suite on a local Supabase with the migrations and seed. One simulator and one emulator confirm a check-in appears on the second phone within 5 seconds (Section 4). CI applies every migration to an empty database on each pull request, and times `nearby_courts` against 500 seeded courts (Section 4).
-- **Usability:** Ten outsiders, with no walkthrough, sign up, find a court, check in, send a challenge, and find block and report (Section 4). We record where they stop, change the design, and rerun those tasks.
-- **Bugs:** Each failure in testing or use is a GitHub Issue with the screen, account, and server response.
-
-### Test Automation and CI
-
-- **Test Automation:** Jest with the jest-expo preset. Installed for Expo SDK 58. Following [Expo’s unit-testing guide](https://docs.expo.dev/develop/unit-testing/). We use Jest because it tests TS service functions in Node without requiring a phone or database. Jest also runs easily in CI (GitHub Actions) on every pull request. We’re using pgTAP because its tests can act as a specific user and check that the database refuses based on our Postgres row-level security and permissions for ELO and privacy.
-- **Adding a Test:**
-  - add `src/services/<module>.test.ts` next to the module. Run `npm test`. The example is `src/services/auth.test.ts`.
-  - For a database rule, add a pgTAP file in `supabase/tests/database/`. Run `npx supabase test db`.
-- **CI Service:** Github Actions. `.github/workflows/ci.yml` is the workflow file in this repo, which Github sees and runs. The workflow gets a read-only token and uses no secrets, doesn’t connect to the hosted database, We went with Actions because the repo is already on GitHub, whereas CircleCI and Travis CI would both need separate account or repository access to set up. Supabase has an official action for its CLI, and Actions can block merges using branch protection.
-  - The **app job** runs `npm run lint`, `npx tsc --noEmit`, and `npm test`.
-  - The **database job** runs `supabase db start`, which builds an empty database from every migration and the seed, then `supabase test db`. Does not run a simulator or timing checks.
-  - **Triggers:** a push to any branch, a PR to `main`, or a manual run. (any `on:` entries in workflow file)
-- **Frontend Testing:** Frontend testing will be done through use of Expo Go to constantly check whether the UI is behaving properly. We decided to go with Expo Go since it was built to track React components right on your own personal device and wasn’t difficult to set up. The low overhead allows for quick testing of the UI and frontend components.
-
-### External Feedback:
-
-- External feedback will be most important to create an intuitive, pleasant UI. This can be obtained through surveys and usability testing while in the design phase.
-
 # 7. Software Architecture
 
 ## Components
@@ -735,7 +704,7 @@ We test rating changes, court counts, check-in privacy, and new user journeys.
 - **Check-in:** Accepts a reading within 150 meters, closes the check-in when a reading is outside that radius, expires a check-in after 3 hours, and asks "Still here?" when readings stop. It stores which court and when, never a coordinate.
 - **Rating:** The only writer of ratings and rating history. It previews and applies Elo when a result is confirmed. A dispute voids the match and writes a warning.
 - **Court session:** Keeps the King of the Court queue, the crown, and the streak. When a player leaves or the session ends, it calls Rating. It does not compute Elo.
-- **Postgres and PostGIS:** Tables, indexes, and row-level security. The nearby-courts query answers "what is near me?"
+- **Postgres and PostGIS:** Tables, indexes, and row-level security. The `nearby_courts` query answers "what is near me?"
 - **Court importer:** A scheduled job reads Seattle open data and OpenStreetMap and updates the court list. Players can also report a missing or wrong court.
 - **User/account:** Manages profiles, friendships, blocks, reports, challenges, and appeals. Uses Supabase Auth for signing in.
 - **Team match (Future):** Changes the team format and size for a session. Rejects changes that would include a player outside the Elo range in a ranked session.
@@ -838,7 +807,7 @@ The Supabase project stays on the free tier, and the database fits in the free s
 
 **Realtime, instead of polling:** The map subscribes to the courts on screen and updates the marker when a row changes.
 
-- **Alternative:** The client polls the nearby-courts query every few seconds.
+- **Alternative:** The client polls the `nearby_courts` query every few seconds.
 - **Pros:** Simpler, and it works inside Expo Go with no channel setup.
 - **Cons:** Two phones wait for the next poll to show the same count. It wakes the radio more often and makes the "check-in within 5 seconds" requirement depend on the poll frequency.
 
@@ -973,6 +942,37 @@ Indexes on court locations serve nearby search (Sec 4). Constraints keep an open
 ### Court importer
 
 - `import_courts` (weekly): Pull OSM and Seattle data, skip duplicates and manually edited courts, log the results.
+
+## Test plan & bugs
+
+### Usability Tests - UI/UX
+
+We plan to have people outside of our group to try the app and do things like find a court, check in, and send a challenge. Everyone will try the same tasks without us walking them through it. We’ll keep track of whether they finish and where they get stuck or need help. We also want to see if people understand why they have to check in before seeing who is playing. We’ll also interview them afterward to see what they thought of the app and get their suggestions on what we could improve. We’ll also do the timing and block/report checks listed in our non functional requirements with ten testers. Along with finding courts and sending challenges these tasks will help show us whether new users can get through the main parts of the app without our help.
+
+### Backend/Database tests
+
+We test rating changes, court counts, check-in privacy, and new user journeys.
+
+- **Unit tests:** pgTAP checks each RLS policy with two test accounts (one checked in, one not), including that names stay hidden until check-in. Jest tests each `services/` module with Supabase, including invalid usernames. To be implemented: reject a check-in at 200 meters, reject a ranked Elo gap over 150, a void leaves `profiles.elo` unchanged, and `confirm_result` writes `profiles.elo` and `elo_history` together.
+- **Integration:** GitHub Actions runs that pgTAP suite on a local Supabase with the migrations and seed. CI applies every migration to an empty database on each pull request. It does not run a simulator or time `nearby_courts`. A separate check, not in CI, uses one simulator and one emulator to confirm a check-in appears on the second phone within 5 seconds (Section 4).
+- **Usability:** Ten outsiders, with no walkthrough, sign up, find a court, check in, send a challenge, and find block and report (Section 4). We record where they stop, change the design, and rerun those tasks.
+- **Bugs:** Each failure in testing or use is a GitHub Issue with the screen, account, and server response.
+
+### Test Automation and CI
+
+- **Test Automation:** Jest with the jest-expo preset. Installed for Expo SDK 58. Following [Expo’s unit-testing guide](https://docs.expo.dev/develop/unit-testing/). We use Jest because it tests TS service functions in Node without requiring a phone or database. Jest also runs easily in CI (GitHub Actions) on every pull request. We’re using pgTAP because its tests can act as a specific user and check that the database refuses based on our Postgres row-level security and permissions for ELO and privacy.
+- **Adding a Test:**
+  - add `src/services/<module>.test.ts` next to the module. Run `npm test`. The example is `src/services/auth.test.ts`.
+  - For a database rule, add a pgTAP file in `supabase/tests/database/`. Run `npx supabase test db`.
+- **CI Service:** Github Actions. `.github/workflows/ci.yml` is the workflow file in this repo, which Github sees and runs. The workflow gets a read-only token and uses no secrets, doesn’t connect to the hosted database, We went with Actions because the repo is already on GitHub, whereas CircleCI and Travis CI would both need separate account or repository access to set up. Supabase has an official action for its CLI, and Actions can block merges using branch protection.
+  - The **app job** runs `npm run lint`, `npx tsc --noEmit`, and `npm test`.
+  - The **database job** runs `supabase db start`, which builds an empty database from every migration and the seed, then `supabase test db`. Does not run a simulator or timing checks.
+  - **Triggers:** a push to any branch, a PR to `main`, or a manual run. (any `on:` entries in workflow file)
+- **Frontend Testing:** Frontend testing will be done through use of Expo Go to constantly check whether the UI is behaving properly. We decided to go with Expo Go since it was built to track React components right on your own personal device and wasn’t difficult to set up. The low overhead allows for quick testing of the UI and frontend components.
+
+### External Feedback:
+
+- External feedback will be most important to create an intuitive, pleasant UI. This can be obtained through surveys and usability testing while in the design phase.
 
 # Coding Guideline
 
