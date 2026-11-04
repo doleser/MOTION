@@ -1,10 +1,9 @@
 import {Pressable, StyleSheet, Text, View} from 'react-native';
-import {SvgIcon} from './SvgIcon';
 
 import {colors, opacity, sizes, spacing, typography} from '../theme';
 
 // Reed's back arrow, downloaded from Figma ("Icon / back").
-const backIcon = require('../../assets/icons/back.svg');
+import BackIcon from '../../assets/icons/back.svg';
 
 interface ScreenHeaderProps {
   title: string;
@@ -27,7 +26,7 @@ export function ScreenHeader({title, onBack}: ScreenHeaderProps) {
           onPress={onBack}
           style={({pressed}) => [styles.back, pressed && styles.pressed]}>
           {/* The SVG file sets its own 24 x 24 size. */}
-          <SvgIcon asset={backIcon} />
+          <BackIcon />
         </Pressable>
       ) : (
         // Empty space the size of the arrow, so the title doesn't move.

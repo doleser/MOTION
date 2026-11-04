@@ -38,6 +38,9 @@
   },
   "devDependencies": {
     "@eslint/js": "^8.57.1",
+    "@svgr/core": "^8.1.0",
+    "@svgr/plugin-jsx": "^8.1.0",
+    "@svgr/plugin-svgo": "^8.1.0",
     "@types/jest": "30.0.0",
     "@types/react": "~19.3.0",
     "eslint": "^9.0.0",
@@ -54,7 +57,12 @@
     "zod": "^4.6.6"
   },
   "jest": {
-     "preset": "jest-expo",
-     "setupFiles": ["./jest.setup.js"]
-   }
+    "preset": "jest-expo",
+    "setupFiles": [
+      "./jest.setup.js"
+    ],
+    "moduleNameMapper": {
+      "\\.svg$": "<rootDir>/jest.svgMock.js"
+    }
+  }
 }
