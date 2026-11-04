@@ -5,7 +5,7 @@ import {colors, fonts, sizes, spacing, typography} from '../theme';
 
 /**
  * Figma "MVP / Court marker" states:
- *   active   - players are there (yellow tile)
+ *   active   - players are there (yellow outline)
  *   live     - a session (King of the Court) is running (yellow outline)
  *   selected - the court you're looking at (thick yellow outline)
  *   empty    - nobody is there (grey outline)
@@ -19,11 +19,14 @@ const LIVE_TAG_HEIGHT = 22;
 const LIVE_TAG_GAP = 8;
 /** Figma: a plain name sits 5 below the tile. */
 const NAME_GAP = 5;
+/** Room under the tile for the name (the live tag is the tallest). */
+const BELOW_TILE = LIVE_TAG_GAP + LIVE_TAG_HEIGHT;
 /**
- * Total height, the same in every state so the map anchor never moves.
- * The map points at the tile's center: y = COURT_MARKER_SIZE / 2 / COURT_MARKER_HEIGHT.
+ * Total height, the same in every state. Empty space above the tile matches
+ * the name's space below it, so the tile is the exact center of the marker.
+ * The map can then use its default center anchor, with no offset to get wrong.
  */
-export const COURT_MARKER_HEIGHT = COURT_MARKER_SIZE + LIVE_TAG_GAP + LIVE_TAG_HEIGHT;
+export const COURT_MARKER_HEIGHT = COURT_MARKER_SIZE + 2 * BELOW_TILE;
 /** Total width (Figma: the name is 115 wide). */
 export const COURT_MARKER_WIDTH = 115;
 
@@ -58,15 +61,17 @@ export const CourtMarker = memo(function CourtMarker({
   );
 });
 
+// Every tile is black. Courts with players get a yellow outline and count;
+// an empty court gets grey. Selected keeps a thicker outline.
 const tileStyles = StyleSheet.create({
-  active: {backgroundColor: colors.yellow, borderColor: colors.yellow},
+  active: {backgroundColor: colors.bg, borderColor: colors.yellow},
   live: {backgroundColor: colors.bg, borderColor: colors.yellow},
   selected: {backgroundColor: colors.bg, borderColor: colors.yellow, borderWidth: 3},
   empty: {backgroundColor: colors.bg, borderColor: colors.muted},
 });
 
 const countColors: Record<CourtMarkerState, string> = {
-  active: colors.bg,
+  active: colors.yellow,
   live: colors.yellow,
   selected: colors.yellow,
   empty: colors.muted,
@@ -77,6 +82,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: COURT_MARKER_WIDTH,
     height: COURT_MARKER_HEIGHT,
+    paddingTop: BELOW_TILE,
   },
   tile: {
     width: COURT_MARKER_SIZE,

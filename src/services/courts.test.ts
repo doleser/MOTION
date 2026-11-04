@@ -1,6 +1,7 @@
 import {
   distanceBetween,
   getCourt,
+  getCourtPreview,
   getNearbyCourts,
   listCourts,
   subscribeToCourtCounts,
@@ -118,5 +119,29 @@ describe('subscribeToCourtCounts', () => {
     subscribeToCourtCounts([], onUpdate)();
     jest.advanceTimersByTime(20000);
     expect(onUpdate).not.toHaveBeenCalled();
+  });
+});
+
+describe('getCourtPreview', () => {
+  it('shows a live King of the Court session (Figma: IMA card)', () => {
+    expect(getCourtPreview(6, 12)).toEqual({
+      typeLine: 'Indoor · Full court',
+      activityLine: '1V1 LIVE · 2 WAITING',
+    });
+  });
+
+  it('shows pickup when players are there without a session (Figma: Ravenna card)', () => {
+    // Figma says "Outdoor court"; we always name the court size when we know it.
+    expect(getCourtPreview(3, 6)).toEqual({
+      typeLine: 'Outdoor · Full court',
+      activityLine: 'PICKUP ACTIVE · NO KOTC SESSION',
+    });
+  });
+
+  it('says when nobody is there', () => {
+    expect(getCourtPreview(2, 0)).toEqual({
+      typeLine: 'Outdoor · Half court',
+      activityLine: 'NO ONE HERE YET',
+    });
   });
 });

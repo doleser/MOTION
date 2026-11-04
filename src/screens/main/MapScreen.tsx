@@ -1,19 +1,33 @@
 import {useIsFocused} from '@react-navigation/native';
 import {StatusBar} from 'expo-status-bar';
-import {memo, useCallback, useEffect, useRef, useState} from 'react';
-import {ActivityIndicator, Platform, Pressable, StyleSheet, Text, View} from 'react-native';
-import MapView, {Marker, type MapPressEvent, type Region} from 'react-native-maps';
+import {memo, useCallback, useEffect, useRef, useState, type ReactNode} from 'react';
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native';
+import MapView, {
+  Marker,
+  type MapMarker,
+  type MapPressEvent,
+  type Region,
+} from 'react-native-maps';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {SvgIcon} from '../../components/SvgIcon';
 
+import {CourtCard} from '../../components/CourtCard';
 import {
   COURT_MARKER_HEIGHT,
-  COURT_MARKER_SIZE,
+  COURT_MARKER_WIDTH,
   CourtMarker,
   type CourtMarkerState,
 } from '../../components/CourtMarker';
 import type {MapScreenProps} from '../../navigation/types';
-import type {CourtPin, LatLng} from '../../services/courts';
+import {getCourtPreview, type CourtPin, type LatLng} from '../../services/courts';
 import {DEFAULT_LOCATION, getCurrentLocation} from '../../services/location';
 import {colors, fonts, opacity, sizes, spacing, typography} from '../../theme';
 import {darkMapStyle} from './darkMapStyle';
@@ -21,14 +35,14 @@ import {useCourtCounts} from './useCourtCounts';
 import {useNearbyCourts} from './useNearbyCourts';
 
 // Recenter icon, downloaded from Figma ("Icon / target").
-const targetIcon = require('../../../assets/icons/target.svg');
+import TargetIcon from '../../../assets/icons/target.svg';
 
 /** How far the map is zoomed when it opens or recenters (about 4 km tall). */
 const START_DELTA = 0.04;
 
-/** A map tap this close (in points) to a court's tile opens that court. */
+/** A map tap this close (in points) to a court's tile selects that court. */
 const TAP_RADIUS = 40;
-/** Ignore a second open within this long (one tap can fire two handlers). */
+/** Ignore a second select within this long (one tap can fire two handlers). */
 const OPEN_COOLDOWN_MS = 800;
 
 function regionAround(center: LatLng): Region {
@@ -42,6 +56,8 @@ export function MapScreen({navigation}: MapScreenProps<'MapHome'>) {
   const [startRegion, setStartRegion] = useState<Region | null>(null);
   const [userLocation, setUserLocation] = useState<LatLng | null>(null);
   const [activeOnly, setActiveOnly] = useState(false);
+  /** The court whose card is open, if any. */
+  const [selectedId, setSelectedId] = useState<number | null>(null);
   const {courts, isLoading, error, loadAround, onRegionChangeComplete, refresh, updateCount} =
     useNearbyCourts();
 
@@ -65,26 +81,34 @@ export function MapScreen({navigation}: MapScreenProps<'MapHome'>) {
     };
   }, [loadAround]);
 
-  // Open a court, at most once per tap. On iOS a tap on a pin can reach
-  // both the pin's onPress and the map's onPress.
-  const lastOpenedAt = useRef(0);
-  const openCourt = useCallback(
-    (courtId: number) => {
-      const now = Date.now();
-      if (now - lastOpenedAt.current < OPEN_COOLDOWN_MS) {
-        return;
-      }
-      lastOpenedAt.current = now;
-      navigation.navigate('CourtDetails', {courtId});
-    },
-    [navigation],
-  );
+  // Open a court's card, at most once per tap. On iOS a tap on a pin can
+  // reach both the pin's onPress and the map's onPress.
+  const lastSelectedAt = useRef(0);
+  const selectCourt = useCallback((court: CourtPin) => {
+    const now = Date.now();
+    if (now - lastSelectedAt.current < OPEN_COOLDOWN_MS) {
+      return;
+    }
+    lastSelectedAt.current = now;
+    setSelectedId(court.id);
+  }, []);
 
   const shownCourts = activeOnly ? courts.filter((court) => court.playerCount > 0) : courts;
+  // Null when nothing is selected, or the selected court left the map
+  // (filtered out or out of range).
+  const selectedCourt = shownCourts.find((court) => court.id === selectedId) ?? null;
 
-  // Backup for pin taps: the pin's own onPress often misses on iOS (for
-  // example on a pin that was tapped before). Open the court whose tile is
-  // closest to the tap, if it's within TAP_RADIUS.
+  function openSelectedCourt() {
+    if (!selectedCourt) {
+      return;
+    }
+    setSelectedId(null);
+    navigation.navigate('CourtDetails', {courtId: selectedCourt.id});
+  }
+
+  // Pin taps on iOS, and a backup on Android. iOS pins have no tap area of
+  // their own (see PinAnchor), so select the court whose tile is closest to
+  // the tap, if it's within TAP_RADIUS.
   async function handleMapPress(event: MapPressEvent) {
     const map = mapRef.current;
     if (!map) {
@@ -95,17 +119,21 @@ export function MapScreen({navigation}: MapScreenProps<'MapHome'>) {
       const points = await Promise.all(
         shownCourts.map((court) => map.pointForCoordinate(court)),
       );
-      let nearestId: number | null = null;
+      let nearest: CourtPin | null = null;
       let nearestDistance = TAP_RADIUS;
       points.forEach((point, i) => {
         const distance = Math.hypot(point.x - tap.x, point.y - tap.y);
         if (distance <= nearestDistance) {
           nearestDistance = distance;
-          nearestId = shownCourts[i].id;
+          nearest = shownCourts[i];
         }
       });
-      if (nearestId !== null) {
-        openCourt(nearestId);
+      if (nearest !== null) {
+        selectCourt(nearest);
+      } else if (Date.now() - lastSelectedAt.current >= OPEN_COOLDOWN_MS) {
+        // A tap on empty map closes the card. Skip right after a select, in
+        // case this is the same tap that hit a pin.
+        setSelectedId(null);
       }
     } catch {
       // The map isn't ready; the pin's own onPress still works.
@@ -146,8 +174,18 @@ export function MapScreen({navigation}: MapScreenProps<'MapHome'>) {
             toolbarEnabled={false}
             pitchEnabled={false}
             rotateEnabled={false}>
+            {/* Figma darkens the map behind the card ("Dismiss overlay"). We
+                skip that: Apple Maps draws map shapes a beat after the card
+                appears, and a layer on top would cover the selected pin.
+                Instead the other pins fade. A tap on empty map closes the card. */}
             {shownCourts.map((court) => (
-              <CourtMapPin key={court.id} court={court} onOpen={openCourt} />
+              <CourtMapPin
+                key={court.id}
+                court={court}
+                selected={court.id === selectedCourt?.id}
+                dimmed={selectedCourt !== null && court.id !== selectedCourt.id}
+                onSelect={selectCourt}
+              />
             ))}
             {userLocation ? <YouMarker location={userLocation} /> : null}
           </MapView>
@@ -176,7 +214,7 @@ export function MapScreen({navigation}: MapScreenProps<'MapHome'>) {
             accessibilityLabel="Center the map on me"
             onPress={recenter}
             style={({pressed}) => [styles.recenter, pressed && styles.pressed]}>
-            <SvgIcon asset={targetIcon} />
+            <TargetIcon />
           </Pressable>
 
           {error ? (
@@ -188,23 +226,40 @@ export function MapScreen({navigation}: MapScreenProps<'MapHome'>) {
             <View style={styles.card}>
               <Text style={styles.cardTitle}>FIND YOUR NEXT RUN</Text>
               <Text style={styles.cardBody}>
-                Tap a court for live counts and activity. Player details stay private until
-                check-in.
+                {'Tap a court pin to preview its activity.\nOpen the card for full court details.'}
               </Text>
             </View>
           )}
         </View>
+
+        {selectedCourt ? (
+          <View style={styles.courtCard} pointerEvents="box-none">
+            <CourtCard
+              name={selectedCourt.name}
+              playerCount={selectedCourt.playerCount}
+              {...getCourtPreview(selectedCourt.id, selectedCourt.playerCount)}
+              onOpen={openSelectedCourt}
+              onClose={() => setSelectedId(null)}
+            />
+          </View>
+        ) : null}
       </View>
     </SafeAreaView>
   );
 }
 
-function markerStateOf(court: CourtPin): CourtMarkerState {
+function markerStateOf(court: CourtPin, selected: boolean): CourtMarkerState {
+  if (selected) {
+    return 'selected';
+  }
   if (court.sessionLive) {
     return 'live';
   }
   return court.playerCount > 0 ? 'active' : 'empty';
 }
+
+/** How see-through the other pins are while a court's card is open. */
+const DIMMED_PIN_OPACITY = 0.72;
 
 /** Long enough for a custom marker to finish drawing before it's frozen. */
 const MARKER_REDRAW_MS = 500;
@@ -215,16 +270,31 @@ const MARKER_REDRAW_MS = 500;
  */
 const CourtMapPin = memo(function CourtMapPin({
   court,
-  onOpen,
+  selected,
+  dimmed,
+  onSelect,
 }: {
   court: CourtPin;
-  onOpen: (courtId: number) => void;
+  selected: boolean;
+  /** Another court's card is open, so this pin fades back. */
+  dimmed: boolean;
+  onSelect: (court: CourtPin) => void;
 }) {
-  const state = markerStateOf(court);
+  const state = markerStateOf(court, selected);
   // Redraw whenever what the pin shows differs from what was last frozen.
-  const look = `${court.playerCount}/${state}`;
+  const look = `${court.playerCount}/${state}/${dimmed}`;
+  const pinOpacity =
+    (court.status === 'closed' ? opacity.disabled : 1) * (dimmed ? DIMMED_PIN_OPACITY : 1);
   const [frozenLook, setFrozenLook] = useState<string | null>(null);
   const redraw = frozenLook !== look;
+  const markerRef = useRef<MapMarker>(null);
+
+  function handlePress() {
+    onSelect(court);
+    // A tapped pin can stay "selected" natively, and the next tap on it may be
+    // swallowed. Deselect it right away so every tap starts fresh.
+    markerRef.current?.hideCallout();
+  }
 
   useEffect(() => {
     const timer = setTimeout(() => setFrozenLook(look), MARKER_REDRAW_MS);
@@ -233,21 +303,28 @@ const CourtMapPin = memo(function CourtMapPin({
 
   return (
     <Marker
+      ref={markerRef}
       coordinate={{latitude: court.latitude, longitude: court.longitude}}
-      // Point at the middle of the tile, not the middle of tile + name.
-      // `anchor` is for Google Maps; Apple Maps uses `centerOffset`.
-      anchor={{x: 0.5, y: COURT_MARKER_SIZE / 2 / COURT_MARKER_HEIGHT}}
-      centerOffset={{x: 0, y: COURT_MARKER_HEIGHT / 2 - COURT_MARKER_SIZE / 2}}
+      // The tile is the marker's center. Android uses `anchor`; iOS ignores
+      // it, and PinAnchor centers the tile instead.
+      anchor={{x: 0.5, y: 0.5}}
       tracksViewChanges={redraw}
-      onPress={() => onOpen(court.id)}
+      // iOS taps go through the map's onPress (see handleMapPress).
+      tappable={!IS_IOS}
+      // The selected pin draws on top of its neighbors.
+      zIndex={selected ? 1 : 0}
+      onPress={handlePress}
       accessibilityLabel={`${court.name}, ${court.playerCount} playing`}>
-      <View style={court.status === 'closed' ? styles.closedPin : undefined}>
+      <PinAnchor
+        width={COURT_MARKER_WIDTH}
+        pointY={COURT_MARKER_HEIGHT / 2}
+        style={{opacity: pinOpacity}}>
         <CourtMarker
           playerCount={court.playerCount}
           state={state}
           label={court.name.toUpperCase()}
         />
-      </View>
+      </PinAnchor>
     </Marker>
   );
 });
@@ -266,13 +343,54 @@ function YouMarker({location}: {location: LatLng}) {
       anchor={{x: 0.5, y: YOU_DOT_SIZE / 2 / YOU_MARKER_HEIGHT}}
       tracksViewChanges={redraw}
       tappable={false}>
-      <View style={styles.you}>
-        <View style={styles.youDot}>
-          <View style={styles.youCenter} />
+      <PinAnchor width={YOU_MARKER_WIDTH} pointY={YOU_DOT_SIZE / 2}>
+        <View style={styles.you}>
+          <View style={styles.youDot}>
+            <View style={styles.youCenter} />
+          </View>
+          <Text style={styles.youLabel}>YOU</Text>
         </View>
-        <Text style={styles.youLabel}>YOU</Text>
-      </View>
+      </PinAnchor>
     </Marker>
+  );
+}
+
+const IS_IOS = Platform.OS === 'ios';
+
+/**
+ * Puts a custom pin's point on its map coordinate.
+ *
+ * On iOS (Apple Maps, new architecture) react-native-maps starts each custom
+ * pin at zero size and only sizes it later, often not until a zoom. Until
+ * then the pin's top-left corner sits on the coordinate, so the pin is drawn
+ * down and to the right of the court. To avoid that, the native pin is kept
+ * at zero size on purpose: the content hangs from a zero-size point and is
+ * shifted so that (width / 2, pointY) lands on it.
+ *
+ * Android draws the pin as an image and uses the Marker's `anchor`, so this
+ * is a plain wrapper there.
+ */
+function PinAnchor({
+  width,
+  pointY,
+  style,
+  children,
+}: {
+  /** Content width. */
+  width: number;
+  /** How far down the content the map point is. */
+  pointY: number;
+  style?: StyleProp<ViewStyle>;
+  children: ReactNode;
+}) {
+  if (!IS_IOS) {
+    return <View style={style}>{children}</View>;
+  }
+  return (
+    // collapsable={false} keeps this zero-size view from being optimized away.
+    <View collapsable={false} style={[styles.anchorPoint, style]}>
+      <View style={[styles.anchorContent, {left: -width / 2, top: -pointY}]}>{children}</View>
+    </View>
   );
 }
 
@@ -280,6 +398,7 @@ const YOU_DOT_SIZE = 16;
 const YOU_LABEL_GAP = 4;
 const YOU_LABEL_HEIGHT = 12;
 const YOU_MARKER_HEIGHT = YOU_DOT_SIZE + YOU_LABEL_GAP + YOU_LABEL_HEIGHT;
+const YOU_MARKER_WIDTH = 38;
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -386,12 +505,24 @@ const styles = StyleSheet.create({
     ...typography.body,
     color: colors.muted,
   },
-  closedPin: {
-    opacity: opacity.disabled,
+  courtCard: {
+    position: 'absolute',
+    left: spacing.screen,
+    right: spacing.screen,
+    // Figma: 4 above the tab bar.
+    bottom: spacing.xs,
+  },
+  anchorPoint: {
+    width: 0,
+    height: 0,
+    overflow: 'visible',
+  },
+  anchorContent: {
+    position: 'absolute',
   },
   you: {
     alignItems: 'center',
-    width: 38,
+    width: YOU_MARKER_WIDTH,
     height: YOU_MARKER_HEIGHT,
     gap: YOU_LABEL_GAP,
   },

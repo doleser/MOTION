@@ -69,6 +69,14 @@ export interface CourtDetails extends LatLng {
   sessionLive: boolean;
 }
 
+/** The extra lines on the map's court card. */
+export interface CourtPreview {
+  /** e.g. "Indoor · Full court". Empty when nothing is known. */
+  typeLine: string;
+  /** e.g. "1V1 LIVE · 2 WAITING". */
+  activityLine: string;
+}
+
 export interface NearbyCourtsQuery extends LatLng {
   /** Only courts this close. The server caps it at 50 km. */
   radiusMeters: number;
@@ -120,6 +128,8 @@ interface CourtExtras {
   accessNote: string | null;
   onTheWay: number;
   sessionLive: boolean;
+  /** Players waiting in the King of the Court queue. */
+  kotcWaiting: number;
   /** Overrides the hoop-count rule when the hoop count is unknown. */
   isFullCourt?: boolean;
 }
@@ -128,21 +138,22 @@ interface CourtExtras {
 // neighborhood, access note, "heading here" claims, or sessions yet, so these
 // are hard-coded for the seed courts.
 const COURT_EXTRAS: Readonly<Record<number, CourtExtras>> = {
-  1: {area: 'UW / U DISTRICT', accessNote: null, onTheWay: 1, sessionLive: false},
-  2: {area: 'LAURELHURST', accessNote: null, onTheWay: 0, sessionLive: false},
-  3: {area: 'RAVENNA', accessNote: null, onTheWay: 2, sessionLive: false},
-  4: {area: 'GREEN LAKE', accessNote: null, onTheWay: 0, sessionLive: false},
-  5: {area: 'GREEN LAKE', accessNote: null, onTheWay: 0, sessionLive: false},
+  1: {area: 'UW / U DISTRICT', accessNote: null, onTheWay: 1, sessionLive: false, kotcWaiting: 0},
+  2: {area: 'LAURELHURST', accessNote: null, onTheWay: 0, sessionLive: false, kotcWaiting: 0},
+  3: {area: 'RAVENNA', accessNote: null, onTheWay: 2, sessionLive: false, kotcWaiting: 0},
+  4: {area: 'GREEN LAKE', accessNote: null, onTheWay: 0, sessionLive: false, kotcWaiting: 0},
+  5: {area: 'GREEN LAKE', accessNote: null, onTheWay: 0, sessionLive: false, kotcWaiting: 0},
   6: {
     area: 'UW / MONTLAKE',
     accessNote: 'UW access required · Check venue hours',
     onTheWay: 3,
     sessionLive: true,
+    kotcWaiting: 2,
     isFullCourt: true,
   },
 };
 
-const NO_EXTRAS: CourtExtras = {area: null, accessNote: null, onTheWay: 0, sessionLive: false};
+const NO_EXTRAS: CourtExtras = {area: null, accessNote: null, onTheWay: 0, sessionLive: false, kotcWaiting: 0};
 
 /**
  * Straight-line distance in meters (haversine). The stub filters with it, and
@@ -231,6 +242,40 @@ export async function getCourt(courtId: number): Promise<CourtDetails> {
     onTheWay: extras.onTheWay,
     sessionLive: extras.sessionLive,
   };
+}
+
+/**
+ * The court type and activity lines for the map's court card. The live
+ * player count comes from the map pin, not from here.
+ *
+ * TODO(backend): hard-coded from the stub data until courts have these
+ * columns and King of the Court sessions exist.
+ */
+export function getCourtPreview(courtId: number, playerCount: number): CourtPreview {
+  const court = STUB_COURTS.find((c) => c.id === courtId);
+  const extras = COURT_EXTRAS[courtId] ?? NO_EXTRAS;
+
+  let typeLine = '';
+  if (court) {
+    const isFullCourt =
+      extras.isFullCourt ?? (court.hoopCount === null ? null : court.hoopCount >= 2);
+    const parts = [
+      court.indoor === null ? null : court.indoor ? 'Indoor' : 'Outdoor',
+      isFullCourt === null ? null : isFullCourt ? 'Full court' : 'Half court',
+    ];
+    typeLine = parts.filter((part) => part !== null).join(' · ');
+  }
+
+  let activityLine: string;
+  if (extras.sessionLive) {
+    activityLine = `1V1 LIVE · ${extras.kotcWaiting} WAITING`;
+  } else if (playerCount > 0) {
+    activityLine = 'PICKUP ACTIVE · NO KOTC SESSION';
+  } else {
+    // Not in Figma.
+    activityLine = 'NO ONE HERE YET';
+  }
+  return {typeLine, activityLine};
 }
 
 /** How often the stub pretends someone checks in or out. */

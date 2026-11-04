@@ -38,6 +38,8 @@ export const typography = {
   elo: {fontFamily: fonts.anton, fontSize: 112},
   /** Screen headline, e.g. "BACK ON THE COURT". Figma: MOTION / title (Anton 32/40) */
   title: {fontFamily: fonts.anton, fontSize: 32, lineHeight: 40},
+  /** Big counts, e.g. players on the map's court card. Figma: MOTION / number (Anton 32/38) */
+  number: {fontFamily: fonts.anton, fontSize: 32, lineHeight: 38},
   /** Big values inside controls, e.g. "6 FT". Figma: MOTION / section (Anton 24/30) */
   section: {fontFamily: fonts.anton, fontSize: 24, lineHeight: 30},
   /** Field labels and small caps lines. Figma: MOTION / label (Inter Bold 12/16) */

@@ -1,22 +1,20 @@
 import type {BottomTabBarProps} from '@react-navigation/bottom-tabs';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {SvgIcon} from '../components/SvgIcon';
 
 import {colors, opacity, spacing, typography} from '../theme';
 import type {MainTabParamList} from './types';
 
+import MapActiveIcon from '../../assets/icons/tab-map-active.svg';
+import MapInactiveIcon from '../../assets/icons/tab-map-inactive.svg';
+import PlayIcon from '../../assets/icons/tab-play.svg';
+import ProfileActiveIcon from '../../assets/icons/tab-profile-active.svg';
+import ProfileInactiveIcon from '../../assets/icons/tab-profile-inactive.svg';
+
 // Icons downloaded from Figma ("MVP / Navigation"). Each SVG sets its own 22 x 22 size.
 const ICONS = {
-  Map: {
-    active: require('../../assets/icons/tab-map-active.svg'),
-    inactive: require('../../assets/icons/tab-map-inactive.svg'),
-  },
-  Profile: {
-    active: require('../../assets/icons/tab-profile-active.svg'),
-    inactive: require('../../assets/icons/tab-profile-inactive.svg'),
-  },
-  Play: require('../../assets/icons/tab-play.svg'),
+  Map: {active: MapActiveIcon, inactive: MapInactiveIcon},
+  Profile: {active: ProfileActiveIcon, inactive: ProfileInactiveIcon},
 };
 
 /**
@@ -46,6 +44,7 @@ export function MotionTabBar({state, navigation}: BottomTabBarProps) {
         }
 
         const isPlay = name === 'Play';
+        const Icon = isPlay ? PlayIcon : ICONS[name][isActive ? 'active' : 'inactive'];
         return (
           <Pressable
             key={route.key}
@@ -60,10 +59,10 @@ export function MotionTabBar({state, navigation}: BottomTabBarProps) {
             ]}>
             {isPlay ? (
               <View style={styles.playTile}>
-                <SvgIcon asset={ICONS.Play} />
+                <Icon />
               </View>
             ) : (
-              <SvgIcon asset={ICONS[name][isActive ? 'active' : 'inactive']} />
+              <Icon />
             )}
             <Text
               style={[
