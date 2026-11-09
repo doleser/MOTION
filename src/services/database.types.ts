@@ -63,6 +63,84 @@ isOneToOne: false
                   Relationships: [
                     
                   ]
+                },"elo_history": {
+                  Row: {
+                    "created_at": string,"elo_after": number,"elo_before": number,"game_id": number | null,"history_id": number,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"elo_after": number,"elo_before": number,"game_id"?: number | null,"history_id"?: never,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"elo_after"?: number,"elo_before"?: number,"game_id"?: number | null,"history_id"?: never,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "elo_history_game_id_fkey"
+      columns: ["game_id"]
+isOneToOne: false
+      referencedRelation: "games"
+      referencedColumns: ["game_id"]
+    },{
+      foreignKeyName: "elo_history_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    }
+                  ]
+                },"game_players": {
+                  Row: {
+                    "game_id": number,"side": number,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "game_id": number,"side": number,"user_id": string
+                  }
+                  Update: {
+                    "game_id"?: number,"side"?: number,"user_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "game_players_game_id_fkey"
+      columns: ["game_id"]
+isOneToOne: false
+      referencedRelation: "games"
+      referencedColumns: ["game_id"]
+    },{
+      foreignKeyName: "game_players_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    }
+                  ]
+                },"games": {
+                  Row: {
+                    "confirmed_at": string | null,"court_id": number,"created_at": string,"game_id": number,"ranked": boolean,"reported_by": string | null,"status": string,"winning_side": number
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "confirmed_at"?: string | null,"court_id": number,"created_at"?: string,"game_id"?: never,"ranked": boolean,"reported_by"?: string | null,"status"?: string,"winning_side": number
+                  }
+                  Update: {
+                    "confirmed_at"?: string | null,"court_id"?: number,"created_at"?: string,"game_id"?: never,"ranked"?: boolean,"reported_by"?: string | null,"status"?: string,"winning_side"?: number
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "games_court_id_fkey"
+      columns: ["court_id"]
+isOneToOne: false
+      referencedRelation: "courts"
+      referencedColumns: ["court_id"]
+    },{
+      foreignKeyName: "games_reported_by_fkey"
+      columns: ["reported_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["user_id"]
+    }
+                  ]
                 },"profiles": {
                   Row: {
                     "appeal_count": number,"created_at": string,"elo": number,"height_cm": number | null,"home_court_id": number | null,"onboarded_at": string | null,"open_to_challenges": boolean,"position": string | null,"tags": (string)[] | null,"user_id": string,"username": string | null
@@ -153,7 +231,15 @@ isOneToOne: false
                            },
 "nearby_courts":
 { Args: { "lat": number,"lng": number,"radius": number }; Returns: {
-              "avg_elo": number,"court_id": number,"distance_m": number,"name": string,"player_count": number,"status": string
+              "avg_elo": number,"court_id": number,"distance_m": number,"latitude": number,"longitude": number,"name": string,"player_count": number,"status": string
+            }[]
+                           },
+"played_in":
+{ Args: { "p_game_id": number }; Returns: boolean
+                           },
+"player_record":
+{ Args: { "p_user_id": string }; Returns: {
+              "losses": number,"recent": (string)[],"streak": number,"wins": number
             }[]
                            }
           }
