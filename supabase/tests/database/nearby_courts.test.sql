@@ -1,11 +1,12 @@
 -- pgTAP tests for nearby_courts: radius search from the seeded courts, closest first,
--- active-only player counts and average elo, the 50 km cap, and anon access.
+-- each court's latitude and longitude, active-only player counts and average elo,
+-- the 50 km cap, and anon and signed-in access.
 -- Seed distances from the IMA: Denny Courts ~854 m, Laurelhurst ~1564 m, Ravenna ~2268 m.
 -- Run with: npx supabase test db
 begin;
 create extension if not exists pgtap with schema extensions;
 
-select plan(9);
+select plan(12);
 
 -- Alice and Bob are active at Denny. Cara checked out and Dev's check-in expired,
 -- so neither counts.
@@ -59,6 +60,28 @@ select is_empty(
 );
 
 -- ---------------------------------------------------------
+-- Location (for the map pins)
+-- ---------------------------------------------------------
+-- The seed stores Denny Courts as POINT(-122.306971 47.660225), longitude first.
+select results_eq(
+  $$ select latitude, longitude from public.nearby_courts(47.653522, -122.301431, 1500)
+      where name = 'Denny Courts' $$,
+  $$ values (47.660225::double precision, -122.306971::double precision) $$,
+  'latitude and longitude match the seed and are not swapped'
+);
+
+-- Each row's point must be its own court's, not the searched point or another court's.
+select is(
+  (select count(*)::integer
+     from public.nearby_courts(47.653522, -122.301431, 5000) n
+     join public.courts c on c.court_id = n.court_id
+    where n.latitude  is distinct from extensions.st_y(c.location::extensions.geometry)
+       or n.longitude is distinct from extensions.st_x(c.location::extensions.geometry)),
+  0,
+  'every court in range comes back with its own point'
+);
+
+-- ---------------------------------------------------------
 -- Player count and average elo
 -- ---------------------------------------------------------
 select is(
@@ -88,6 +111,24 @@ select is(
   null,
   'avg_elo is null when nobody is checked in'
 );
+
+-- ---------------------------------------------------------
+-- Signed-in player who isn't checked in
+-- ---------------------------------------------------------
+-- The location migration dropped and re-created the function, which also dropped its
+-- grants, so check both roles that should be able to call it.
+set local role authenticated;
+select set_config('request.jwt.claims',
+  '{"sub":"33333333-3333-3333-3333-333333333333","role":"authenticated"}', true);
+
+select is(
+  (select player_count from public.nearby_courts(47.653522, -122.301431, 1500)
+    where name = 'Denny Courts'),
+  2,
+  'a signed-in player can call nearby_courts and sees player counts'
+);
+
+reset role;
 
 -- ---------------------------------------------------------
 -- Signed-out visitor (anon)
