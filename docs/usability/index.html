@@ -1,0 +1,236 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0d0d0d">
+  <meta name="description" content="Join a usability session for the MOTION pickup basketball beta.">
+  <title>MOTION Beta</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #0d0d0d;
+      --panel: #1c1c1c;
+      --text: #f2f2f0;
+      --muted: #b0b0ad;
+      --yellow: #f9ec4a;
+      --line: #444;
+      font: 100%/1.55 system-ui, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    [hidden] { display: none !important; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+    }
+
+    .shell {
+      width: min(100% - 2.5rem, 68rem);
+      margin-inline: auto;
+    }
+
+    .topline, footer {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: .5rem 1.25rem;
+      color: var(--muted);
+      font-size: .75rem;
+      font-weight: 700;
+      letter-spacing: .13em;
+      text-transform: uppercase;
+    }
+
+    .topline {
+      align-items: center;
+      min-height: 4.25rem;
+      padding-block: .75rem;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .status {
+      display: inline-flex;
+      align-items: center;
+      gap: .65rem;
+      color: var(--yellow);
+    }
+
+    .status::before {
+      content: '';
+      width: .5rem;
+      height: .5rem;
+      background: var(--yellow);
+    }
+
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, .85fr);
+      grid-template-areas: 'intro court' 'access court';
+      gap: 2.25rem clamp(2rem, 7vw, 6rem);
+      align-items: start;
+      padding-block: clamp(3rem, 9vw, 7rem);
+    }
+
+    .intro { grid-area: intro; }
+
+    h1 {
+      margin: 0;
+      color: var(--yellow);
+      font-family: Impact, Haettenschweiler, 'Arial Narrow', system-ui, sans-serif;
+      font-size: clamp(3.5rem, 10vw, 7.5rem);
+      font-weight: 900;
+      line-height: .9;
+      letter-spacing: -.055em;
+    }
+
+    .tagline {
+      margin: 1rem 0 0;
+      font-size: clamp(1.05rem, 2.4vw, 1.5rem);
+      font-weight: 600;
+    }
+
+    .access {
+      grid-area: access;
+      border: 1px solid var(--line);
+      border-left: 3px solid var(--yellow);
+      padding: clamp(1rem, 3vw, 1.5rem);
+      background: var(--panel);
+    }
+
+    h2 { margin: 0; font-size: 1.2rem; line-height: 1.3; }
+    .access p { margin: .6rem 0 0; color: var(--muted); }
+
+    .button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      min-height: 3rem;
+      margin-top: 1rem;
+      padding: .65rem 1rem;
+      background: var(--yellow);
+      color: var(--bg);
+      font-weight: 800;
+      text-decoration: none;
+    }
+
+    .button:hover { background: #fff47a; }
+    .button:focus-visible { outline: 2px solid var(--text); outline-offset: 4px; }
+
+    .court {
+      grid-area: court;
+      align-self: center;
+      display: block;
+      width: 100%;
+      height: auto;
+      color: var(--yellow);
+    }
+
+    footer {
+      padding-block: 1.25rem 2rem;
+      border-top: 1px solid var(--line);
+    }
+
+    @media (max-width: 44rem) {
+      main {
+        grid-template-columns: minmax(0, 1fr);
+        grid-template-areas: 'intro' 'access' 'court';
+        gap: 1.5rem;
+        padding-block: 3rem 2rem;
+      }
+
+      .court { max-width: 25rem; }
+    }
+
+    @media (max-width: 22rem) {
+      h1 { font-size: 3.05rem; }
+    }
+  </style>
+</head>
+<body>
+  <header class="shell topline">
+    <span class="status">Usability session</span>
+    <span>UW / Seattle</span>
+  </header>
+
+  <main class="shell">
+    <section class="intro" aria-labelledby="title">
+      <h1 id="title">MOTION</h1>
+      <p class="tagline">Pickup basketball near UW.</p>
+    </section>
+
+    <section class="access" aria-labelledby="access-title">
+      <h2 id="access-title">Try the MOTION beta</h2>
+      <p id="facilitated">Your facilitator will give you a device with the beta ready to open.</p>
+      <p id="linked" hidden>Open this link on the phone set up for your session. If the app doesn’t open, let your facilitator know.</p>
+      <a id="launch" class="button" hidden>Open in Expo Go <span aria-hidden="true">↗</span></a>
+    </section>
+
+    <svg class="court" viewBox="0 0 460 392" aria-hidden="true" focusable="false">
+      <defs>
+        <pattern id="grid" width="18" height="18" patternUnits="userSpaceOnUse">
+          <path d="M18 0H0V18" fill="none" stroke="#282828"/>
+        </pattern>
+      </defs>
+      <path d="M1 1h458v390H1z" fill="#151515" stroke="#444"/>
+      <path d="M1 1h458v390H1z" fill="url(#grid)"/>
+      <g fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M46 48h368v296H46z"/>
+        <path d="M80 48v45a150 150 0 0 0 300 0V48"/>
+        <path d="M177 48v134h106V48"/>
+        <path d="M177 182a53 53 0 0 0 106 0"/>
+        <path d="M177 182a53 53 0 0 1 106 0" stroke-dasharray="6 6"/>
+        <path d="M184 344a46 46 0 0 1 92 0"/>
+        <path d="M208 73h44"/>
+        <circle cx="230" cy="85" r="8"/>
+      </g>
+      <g fill="currentColor">
+        <path d="M1 1h12v12H1zM447 379h12v12h-12z"/>
+        <circle cx="230" cy="182" r="3"/>
+      </g>
+    </svg>
+  </main>
+
+  <footer class="shell">
+    <span>MOTION beta</span>
+    <span>University of Washington · CSE 403</span>
+  </footer>
+
+  <script>
+    function isExpoSessionLink(value) {
+      if (!value) return false;
+
+      try {
+        const url = new URL(value);
+        const isExpoProtocol = url.protocol === 'exp:' || url.protocol === 'exps:';
+        const isTunnel = /^[a-z0-9-]+\.exp\.direct$/i.test(url.hostname);
+        const isLocal = /^(?:10(?:\.\d{1,3}){3}|192\.168(?:\.\d{1,3}){2}|172\.(?:1[6-9]|2\d|3[01])(?:\.\d{1,3}){2})$/.test(url.hostname);
+        return isExpoProtocol && !url.username && !url.password && (isTunnel || isLocal);
+      } catch {
+        return false;
+      }
+    }
+
+    function updateLaunchLink() {
+      // The facilitator can attach the Expo CLI URL to this page for one session.
+      const expoLink = new URLSearchParams(location.hash.slice(1)).get('expo');
+      const launch = document.getElementById('launch');
+      const hasSessionLink = isExpoSessionLink(expoLink);
+      if (hasSessionLink) {
+        launch.href = expoLink;
+      } else {
+        launch.removeAttribute('href');
+      }
+      launch.hidden = !hasSessionLink;
+      document.getElementById('facilitated').hidden = hasSessionLink;
+      document.getElementById('linked').hidden = !hasSessionLink;
+    }
+
+    updateLaunchLink();
+    window.addEventListener('hashchange', updateLaunchLink);
+  </script>
+</body>
+</html>
