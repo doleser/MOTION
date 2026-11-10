@@ -10,7 +10,7 @@ const WELCOME_VIDEO = require('../../../assets/videos/welcome.mp4');
 const WELCOME_POSTER = require('../../../assets/images/welcome-poster.jpg');
 
 interface WelcomeScreenViewProps {
-  onGetStarted: () => void;
+  onCreateAccount: () => void;
   onLogIn: () => void;
 }
 
@@ -20,7 +20,7 @@ interface WelcomeScreenViewProps {
  * Doesn't use AuthLayout: this screen never scrolls and keeps its buttons
  * at the bottom, while AuthLayout is a scrolling form page.
  */
-export function WelcomeScreenView({onGetStarted, onLogIn}: WelcomeScreenViewProps) {
+export function WelcomeScreenView({onCreateAccount, onLogIn}: WelcomeScreenViewProps) {
   return (
     <View style={styles.screen}>
       {/* Black-and-white pickup footage behind the logo and buttons. */}
@@ -41,7 +41,7 @@ export function WelcomeScreenView({onGetStarted, onLogIn}: WelcomeScreenViewProp
         </View>
 
         <View style={styles.actions}>
-          <MotionButton label="GET STARTED" onPress={onGetStarted} />
+          <MotionButton label="CREATE ACCOUNT" onPress={onCreateAccount} />
           <MotionButton label="LOG IN" variant="secondary" onPress={onLogIn} />
           <Text style={styles.footnote}>UW / PICKUP BASKETBALL</Text>
         </View>
