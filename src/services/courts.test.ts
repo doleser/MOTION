@@ -8,9 +8,21 @@ import {
 } from './courts';
 import {supabase} from './supabase';
 
-jest.mock('./supabase', () => ({supabase: {from: jest.fn()}}));
+jest.mock('./supabase', () => ({
+  supabase: {
+    from: jest.fn(),
+    rpc: jest.fn(),
+    channel: jest.fn(),
+    removeChannel: jest.fn(),
+  },
+}));
 
 const from = supabase.from as jest.Mock;
+const rpc = supabase.rpc as jest.Mock;
+const channel = supabase.channel as jest.Mock;
+const removeChannel = supabase.removeChannel as jest.Mock;
+
+beforeEach(() => jest.resetAllMocks());
 
 /** Fakes supabase.from('courts').select(...).eq(...).order(...). */
 function mockCourtsQuery(result: {data: unknown; error: unknown}) {
@@ -60,64 +72,194 @@ describe('distanceBetween', () => {
   });
 });
 
+/** A row as `nearby_courts` returns it. */
+function nearbyRow(overrides: Record<string, unknown> = {}) {
+  return {
+    court_id: 3,
+    name: 'Ravenna Park',
+    latitude: 47.672905,
+    longitude: -122.310858,
+    status: 'active',
+    player_count: 6,
+    avg_elo: 900,
+    distance_m: 1800,
+    ...overrides,
+  };
+}
+
 describe('getNearbyCourts', () => {
-  it('returns courts closest first, with coordinates', async () => {
+  it('asks the database for courts near the point and renames the fields', async () => {
+    rpc.mockResolvedValue({data: [nearbyRow()], error: null});
+
     const courts = await getNearbyCourts({...UW, radiusMeters: 20000});
-    expect(courts.length).toBeGreaterThan(0);
-    for (let i = 1; i < courts.length; i++) {
-      expect(courts[i].distanceMeters).toBeGreaterThanOrEqual(courts[i - 1].distanceMeters);
-    }
-    expect(courts[0]).toEqual(
-      expect.objectContaining({latitude: expect.any(Number), longitude: expect.any(Number)}),
+
+    expect(rpc).toHaveBeenCalledWith('nearby_courts', {
+      p_lat: UW.latitude,
+      p_lng: UW.longitude,
+      p_radius_m: 20000,
+      p_limit: 10,
+    });
+    expect(courts).toEqual([
+      {
+        id: 3,
+        name: 'Ravenna Park',
+        status: 'active',
+        latitude: 47.672905,
+        longitude: -122.310858,
+        playerCount: 6,
+        avgElo: 900,
+        distanceMeters: 1800,
+        sessionLive: false,
+      },
+    ]);
+  });
+
+  it('passes maxResults through as the limit', async () => {
+    rpc.mockResolvedValue({data: [], error: null});
+    await getNearbyCourts({...UW, radiusMeters: 20000, maxResults: 2});
+    expect(rpc).toHaveBeenCalledWith(
+      'nearby_courts',
+      expect.objectContaining({p_limit: 2}),
     );
   });
 
-  it('returns at most maxResults courts', async () => {
-    const courts = await getNearbyCourts({...UW, radiusMeters: 20000, maxResults: 2});
-    expect(courts).toHaveLength(2);
+  it('keeps the order the database sent (closest first) and a missing avg Elo', async () => {
+    rpc.mockResolvedValue({
+      data: [
+        nearbyRow({court_id: 6, name: 'UW IMA', avg_elo: null, distance_m: 300}),
+        nearbyRow({court_id: 1, name: 'Denny Courts', distance_m: 900}),
+      ],
+      error: null,
+    });
+
+    const courts = await getNearbyCourts({...UW, radiusMeters: 20000});
+
+    expect(courts.map((court) => court.name)).toEqual(['UW IMA', 'Denny Courts']);
+    expect(courts[0].avgElo).toBeNull();
   });
 
-  it('leaves out courts outside the radius', async () => {
-    const courts = await getNearbyCourts({...UW, radiusMeters: 1000});
-    expect(courts.every((court) => court.distanceMeters <= 1000)).toBe(true);
-    expect(courts.map((court) => court.name)).not.toContain('Green Lake Full Court');
+  it('throws when the request fails', async () => {
+    const failure = {message: 'network down'};
+    rpc.mockResolvedValue({data: null, error: failure});
+    await expect(getNearbyCourts({...UW, radiusMeters: 1000})).rejects.toBe(failure);
   });
 });
+
+/** A row as `get_court` returns it. */
+function detailsRow(overrides: Record<string, unknown> = {}) {
+  return {
+    court_id: 3,
+    name: 'Ravenna Park',
+    latitude: 47.672905,
+    longitude: -122.310858,
+    status: 'active',
+    player_count: 6,
+    avg_elo: 900,
+    lit: false,
+    indoor: false,
+    hoop_count: 2,
+    ...overrides,
+  };
+}
 
 describe('getCourt', () => {
-  it('returns details, with the full-court rule from the hoop count', async () => {
+  it('asks the database for the court and returns its details', async () => {
+    rpc.mockResolvedValue({data: [detailsRow()], error: null});
+
     const ravenna = await getCourt(3);
-    expect(ravenna.name).toBe('Ravenna Park');
-    expect(ravenna.isFullCourt).toBe(true);
-    const laurelhurst = await getCourt(2);
-    expect(laurelhurst.isFullCourt).toBe(false);
+
+    expect(rpc).toHaveBeenCalledWith('get_court', {p_court_id: 3});
+    expect(ravenna).toEqual(
+      expect.objectContaining({
+        id: 3,
+        name: 'Ravenna Park',
+        playerCount: 6,
+        avgElo: 900,
+        indoor: false,
+        lit: false,
+        hoopCount: 2,
+      }),
+    );
   });
 
-  it("throws 'court_not_found' for an unknown id", async () => {
+  it('works out the full-court rule from the hoop count', async () => {
+    rpc.mockResolvedValue({data: [detailsRow({hoop_count: 2})], error: null});
+    expect((await getCourt(3)).isFullCourt).toBe(true);
+
+    rpc.mockResolvedValue({data: [detailsRow({court_id: 2, hoop_count: 1})], error: null});
+    expect((await getCourt(2)).isFullCourt).toBe(false);
+
+    rpc.mockResolvedValue({data: [detailsRow({court_id: 99, hoop_count: null})], error: null});
+    expect((await getCourt(99)).isFullCourt).toBeNull();
+  });
+
+  it("throws 'court_not_found' when the database says so", async () => {
+    rpc.mockResolvedValue({
+      data: null,
+      error: {code: '22023', message: 'Court not found.'},
+    });
     await expect(getCourt(999)).rejects.toMatchObject({code: 'court_not_found'});
+  });
+
+  it("throws 'court_not_found' when no row comes back", async () => {
+    rpc.mockResolvedValue({data: [], error: null});
+    await expect(getCourt(999)).rejects.toMatchObject({code: 'court_not_found'});
+  });
+
+  it('throws other errors as they are', async () => {
+    const failure = {message: 'network down'};
+    rpc.mockResolvedValue({data: null, error: failure});
+    await expect(getCourt(3)).rejects.toBe(failure);
   });
 });
 
-describe('subscribeToCourtCounts', () => {
-  beforeEach(() => jest.useFakeTimers());
-  afterEach(() => jest.useRealTimers());
+/**
+ * Fakes supabase.channel(name).on(...).subscribe(), one fake channel per name.
+ * `send` pretends the database broadcast a count on that channel.
+ */
+function mockChannels() {
+  const handlers = new Map<string, (message: {payload: unknown}) => void>();
+  channel.mockImplementation((name: string) => {
+    const fake: {on: jest.Mock; subscribe: jest.Mock} = {
+      on: jest.fn(),
+      subscribe: jest.fn(),
+    };
+    fake.on.mockImplementation(
+      (_type: string, _filter: unknown, callback: (m: {payload: unknown}) => void) => {
+        handlers.set(name, callback);
+        return fake;
+      },
+    );
+    fake.subscribe.mockReturnValue(fake);
+    return fake;
+  });
+  return {
+    send: (name: string, payload: unknown) => handlers.get(name)?.({payload}),
+  };
+}
 
-  it('reports count changes for the given courts until unsubscribed', () => {
+describe('subscribeToCourtCounts', () => {
+  it('listens to each court and reports count changes until unsubscribed', () => {
+    const fake = mockChannels();
     const onUpdate = jest.fn();
+
     const unsubscribe = subscribeToCourtCounts([1, 3], onUpdate);
-    jest.advanceTimersByTime(5000);
-    expect(onUpdate).toHaveBeenCalledTimes(1);
-    expect([1, 3]).toContain(onUpdate.mock.calls[0][0].courtId);
+
+    expect(channel).toHaveBeenCalledWith('court:1');
+    expect(channel).toHaveBeenCalledWith('court:3');
+    fake.send('court:3', {courtId: 3, playerCount: 7});
+    expect(onUpdate).toHaveBeenCalledWith({courtId: 3, playerCount: 7});
 
     unsubscribe();
-    jest.advanceTimersByTime(20000);
-    expect(onUpdate).toHaveBeenCalledTimes(1);
+    expect(removeChannel).toHaveBeenCalledTimes(2);
   });
 
   it('does nothing for an empty list', () => {
+    mockChannels();
     const onUpdate = jest.fn();
     subscribeToCourtCounts([], onUpdate)();
-    jest.advanceTimersByTime(20000);
+    expect(channel).not.toHaveBeenCalled();
+    expect(removeChannel).not.toHaveBeenCalled();
     expect(onUpdate).not.toHaveBeenCalled();
   });
 });
