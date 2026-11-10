@@ -19,7 +19,12 @@ export type ServiceErrorCode =
   | 'court_unavailable'
   | 'already_checked_in'
   | 'not_checked_in'
-  | 'court_not_found';
+  | 'court_not_found'
+  | 'self_opponent'
+  | 'opponent_not_found'
+  | 'game_not_found'
+  | 'not_confirmer'
+  | 'result_not_pending';
 
 export class ServiceError extends Error {
   readonly code: ServiceErrorCode;
@@ -129,6 +134,35 @@ export function fromCheckInError(error: PostgrestError): Error {
       return new ServiceError('already_checked_in', error.message);
     case 'Not checked in.':
       return new ServiceError('not_checked_in', error.message);
+    default:
+      return error;
+  }
+}
+
+/**
+ * Turns a preview_elo, confirm_result, or dispute_result error into a
+ * ServiceError. Missing arguments stay as they are, so getErrorMessage shows
+ * the generic message. A 42501 that is not "Not signed in." (a revoked call)
+ * stays as it is too.
+ */
+export function fromResultError(error: PostgrestError): Error {
+  if (error.code === '42501' && error.message === 'Not signed in.') {
+    return new ServiceError('not_signed_in', error.message);
+  }
+  if (error.code !== '22023') {
+    return error;
+  }
+  switch (error.message) {
+    case "You can't play yourself.":
+      return new ServiceError('self_opponent', error.message);
+    case 'Opponent not found.':
+      return new ServiceError('opponent_not_found', error.message);
+    case 'Game not found.':
+      return new ServiceError('game_not_found', error.message);
+    case 'The other player confirms this result.':
+      return new ServiceError('not_confirmer', error.message);
+    case 'Result is not waiting for confirmation.':
+      return new ServiceError('result_not_pending', error.message);
     default:
       return error;
   }
