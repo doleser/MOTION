@@ -690,6 +690,104 @@ Before a full use case: Use case 3 can be run once the migration, RLS, `check_in
 
 # 7. Software Architecture
 
+## Overview
+```mermaid
+flowchart LR
+ 
+  %% ---------- Frontend ----------
+  subgraph FE["Frontend"]
+    Screens["<b>Screens</b><br/>Views, user actions"]:::component
+    FDM["<b>Feature data modules</b><br/>Map, Court, Check-in, Results,<br/>King of the Court, Account,<br/>Team (future)"]:::component
+    Phone["<b>Phone location</b><br/>latitude, longitude"]:::external
+  end
+ 
+  %% ---------- Backend ----------
+  subgraph BE["Backend: Postgres functions, plus Supabase Auth"]
+    UserAcct["<b>User/account</b><br/>Profiles, appeals"]:::component
+    Auth["<b>Supabase Auth</b><br/>Sign-in service"]:::supabase
+    Court["<b>Court session</b><br/>Queue, crown"]:::component
+    Rating["<b>Rating</b><br/>Elo, warnings"]:::component
+    Checkin["<b>Check-in</b><br/>150 m, 3 h expiry"]:::component
+    TeamMatch["<b>Team match</b><br/>Future"]:::future
+  end
+ 
+  %% ---------- Database ----------
+  subgraph DB["Database"]
+    PG["<b>Postgres + PostGIS</b><br/>Tables, indexes, RLS"]:::supabase
+  end
+ 
+  %% ---------- Court import ----------
+  subgraph IMP["Court import"]
+    Seattle["<b>Seattle open data</b><br/>Parks court data"]:::external
+    Importer["<b>Court importer</b><br/>Scheduled, weekly"]:::component
+    OSM["<b>OpenStreetMap</b><br/>Overpass API"]:::external
+  end
+ 
+  %% ---------- Edges (order matters for linkStyle below) ----------
+  %% 0-1 plain, 2-3 request/query, 4 announcement, 5-6 internal, 7 backend writes, 8-9 reads, 10 court rows
+  Screens --> FDM
+  Phone --> FDM
+  FDM -->|request| BE
+  FDM -->|query rows| DB
+  DB -.->|announces change| FDM
+  UserAcct -->|sign-in| Auth
+  Court -->|leave/end| Rating
+  BE ==>|"Check-in, Court session, Rating,<br/>and Auth write their own tables"| DB
+  Importer -->|reads| Seattle
+  Importer -->|reads| OSM
+  Importer ==>|court rows| DB
+ 
+  %% ---------- Styles ----------
+  classDef component fill:#eeeefd,stroke:#4b3fb5,color:#2d2480
+  classDef supabase  fill:#e1f3ec,stroke:#0f6b4f,color:#0b4a37
+  classDef external  fill:#f1eee7,stroke:#7a7568,color:#3a372f
+  classDef future    fill:#f7f7fd,stroke:#b9b6e6,color:#9a96cc
+ 
+  style FE  fill:none,stroke:#999,stroke-dasharray:5 5
+  style BE  fill:none,stroke:#999,stroke-dasharray:5 5
+  style DB  fill:none,stroke:#999,stroke-dasharray:5 5
+  style IMP fill:none,stroke:#999,stroke-dasharray:5 5
+ 
+  linkStyle default stroke:#888,stroke-width:2px
+  linkStyle 4 stroke:#4b3fb5,stroke-width:2px,stroke-dasharray:6 4
+  linkStyle 7,10 stroke:#0f6b4f,stroke-width:3px
+```
+ 
+### Legend
+ 
+```mermaid
+flowchart LR
+ 
+  subgraph Boxes["Boxes and nesting"]
+    K1["Component"]:::component
+    K2["Supabase service"]:::supabase
+    K3["External source or device input"]:::external
+    K4["Future component"]:::future
+    subgraph KL["Layer: Frontend, Backend, Database, Court import"]
+      K5["Boxes inside belong to it"]:::component
+    end
+  end
+ 
+  subgraph Arrows["Arrows (caller to callee)"]
+    A1["Caller"]:::component -->|"Request: callee answers"| B1["Callee"]:::component
+    A2["Caller"]:::component ==>|"Write to the database"| B2["Database"]:::supabase
+    A3["Database"]:::supabase -.->|"Announcement: database says something changed"| B3["Listener"]:::component
+  end
+ 
+  classDef component fill:#eeeefd,stroke:#4b3fb5,color:#2d2480
+  classDef supabase  fill:#e1f3ec,stroke:#0f6b4f,color:#0b4a37
+  classDef external  fill:#f1eee7,stroke:#7a7568,color:#3a372f
+  classDef future    fill:#f7f7fd,stroke:#b9b6e6,color:#9a96cc
+ 
+  style Boxes  fill:none,stroke:#999
+  style Arrows fill:none,stroke:#999
+  style KL     fill:none,stroke:#999,stroke-dasharray:5 5
+ 
+  linkStyle 0 stroke:#888,stroke-width:2px
+  linkStyle 1 stroke:#0f6b4f,stroke-width:3px
+  linkStyle 2 stroke:#4b3fb5,stroke-width:2px,stroke-dasharray:6 4
+```
+
 ## Components
 
 - **Screens:** Draw what a feature data module returns, and send user actions to that module. They do not call the database.
