@@ -12,6 +12,8 @@ export interface Profile {
   userId: string;
   /** The database allows null, but createAccount always sets it. */
   username: string | null;
+  /** Entered at sign-up. Undefined for accounts made before it was required. */
+  realName?: string;
   elo: number;
   openToChallenges: boolean;
   position?: string;
@@ -106,7 +108,7 @@ export async function getMyProfile(): Promise<Profile> {
   const {data, error} = await supabase
     .from('profiles')
     .select(
-      'user_id, username, elo, open_to_challenges, position, height_cm, tags, home_court_id, onboarded_at, appeal_count',
+      'user_id, username, real_name, elo, open_to_challenges, position, height_cm, tags, home_court_id, onboarded_at, appeal_count',
     )
     .eq('user_id', session.user.id)
     .single();
@@ -114,6 +116,7 @@ export async function getMyProfile(): Promise<Profile> {
   return {
     userId: data.user_id,
     username: data.username,
+    realName: data.real_name ?? undefined,
     elo: data.elo,
     openToChallenges: data.open_to_challenges,
     position: data.position ?? undefined,

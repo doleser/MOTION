@@ -9,9 +9,9 @@ import {type Stat, StatPanel} from '../../components/StatPanel';
 import {colors, sizes, spacing, typography} from '../../theme';
 
 interface ProfileScreenViewProps {
+  /** Undefined for accounts made before a real name was required. */
+  realName?: string;
   username: string;
-  /** Play-style tags and height, e.g. "Shooter / Playmaker · 6′ 2″". */
-  details?: string;
   elo: number;
   stats: Stat[];
   /** Most recent games, oldest first. */
@@ -26,8 +26,8 @@ interface ProfileScreenViewProps {
  * Figma: "PROFILE / You" (node 6:136).
  */
 export function ProfileScreenView({
+  realName,
   username,
-  details,
   elo,
   stats,
   recentResults,
@@ -43,7 +43,7 @@ export function ProfileScreenView({
       <View style={styles.divider} />
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-        <PlayerIdentity name={username} details={details} />
+        <PlayerIdentity realName={realName} username={username} />
 
         <View style={styles.elo}>
           <Text style={styles.eloLabel}>1V1 ELO · PROVISIONAL</Text>

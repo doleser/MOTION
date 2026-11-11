@@ -1,35 +1,18 @@
-import {useIsFocused} from '@react-navigation/native';
+import {useFocusEffect, useIsFocused} from '@react-navigation/native';
 import {StatusBar} from 'expo-status-bar';
-import {useLayoutEffect, useState} from 'react';
+import {useCallback, useLayoutEffect, useState} from 'react';
 import {Alert} from 'react-native';
 
-import {cmToInches, formatHeight} from '../../components/heightMath';
-import type {GameResult} from '../../components/RecentForm';
 import type {MainTabScreenProps} from '../../navigation/types';
 import {useAuth} from '../../services/AuthContext';
 import {signOut} from '../../services/auth';
 import {getErrorMessage} from '../../services/errors';
-import {PLAY_STYLE_TAGS, type Profile} from '../../services/profile';
+import {getPlayerRecord, type PlayerRecord} from '../../services/records';
 import {ProfileScreenView} from './ProfileScreenView';
-import {formatWinRate, type WinLoss} from './winRate';
+import {formatWinRate} from './winRate';
 
-interface PlayerRecord extends WinLoss {
-  /** The current run of wins or losses, or null with no games yet. */
-  streak: {result: GameResult; count: number} | null;
-  /** Results of the most recent games, oldest first (up to 5 are shown). */
-  recentResults: GameResult[];
-}
-
-/**
- * FAKE record, until games are played and saved.
- * TODO: replace with real data from the backend (same shape).
- */
-const FAKE_RECORD: PlayerRecord = {
-  wins: 0,
-  losses: 0,
-  streak: null,
-  recentResults: [],
-};
+/** Shown in every stat box until the record has loaded. */
+const NOT_LOADED = '—';
 
 /**
  * The Profile tab: the signed-in player's own profile and Sign out.
@@ -39,6 +22,35 @@ export function ProfileScreen({navigation}: MainTabScreenProps<'Profile'>) {
   const {profile} = useAuth();
   const [error, setError] = useState<string | null>(null);
   const [isSigningOut, setIsSigningOut] = useState(false);
+  // null until the first load finishes (or if it failed).
+  const [record, setRecord] = useState<PlayerRecord | null>(null);
+  const [recordError, setRecordError] = useState<string | null>(null);
+  const userId = profile?.userId;
+
+  // Reload the record every time the tab opens, so a game that was just
+  // confirmed shows up. A reload keeps the old numbers on screen until the
+  // new ones arrive, so the boxes don't flash back to dashes.
+  useFocusEffect(
+    useCallback(() => {
+      if (!userId) return;
+      // Ignore an answer that arrives after the user has left the tab.
+      let isCurrent = true;
+      getPlayerRecord(userId)
+        .then((loaded) => {
+          if (!isCurrent) return;
+          setRecord(loaded);
+          setRecordError(null);
+        })
+        .catch((e: unknown) => {
+          if (!isCurrent) return;
+          console.warn('Could not load record', e);
+          setRecordError("Couldn't load your record.");
+        });
+      return () => {
+        isCurrent = false;
+      };
+    }, [userId]),
+  );
 
   // The tab bar adds a plain white header to every tab. This screen draws
   // its own (Figma), so hide that one here only.
@@ -73,35 +85,22 @@ export function ProfileScreen({navigation}: MainTabScreenProps<'Profile'>) {
       {/* White clock and battery on the dark screen. */}
       {isFocused ? <StatusBar style="light" /> : null}
       <ProfileScreenView
+        realName={profile?.realName}
         username={profile?.username ?? ''}
-        details={profile ? buildDetails(profile) : undefined}
         elo={profile?.elo ?? 0}
         stats={[
-          {value: `${FAKE_RECORD.wins}-${FAKE_RECORD.losses}`, label: 'WIN / LOSS'},
-          {value: formatWinRate(FAKE_RECORD), label: 'WIN RATE'},
-          {value: formatStreak(FAKE_RECORD.streak), label: 'STREAK'},
+          {value: record ? `${record.wins}-${record.losses}` : NOT_LOADED, label: 'WIN / LOSS'},
+          {value: record ? formatWinRate(record) : NOT_LOADED, label: 'WIN RATE'},
+          {value: record ? formatStreak(record.streak) : NOT_LOADED, label: 'STREAK'},
         ]}
-        recentResults={FAKE_RECORD.recentResults}
-        error={error}
+        recentResults={record?.recentResults ?? []}
+        // A sign-out problem matters more, so it wins if both happen.
+        error={error ?? recordError}
         isSigningOut={isSigningOut}
         onSignOut={confirmSignOut}
       />
     </>
   );
-}
-
-/**
- * "Shooter / Playmaker · 6′ 2″". Leaves out whatever the player skipped;
- * undefined if they skipped both.
- */
-function buildDetails(profile: Profile): string | undefined {
-  const tags = (profile.tags ?? [])
-    .map((id) => PLAY_STYLE_TAGS.find((tag) => tag.id === id)?.label ?? id)
-    .join(' / ');
-  const height =
-    profile.heightCm !== undefined ? formatHeight(cmToInches(profile.heightCm)) : '';
-  const parts = [tags, height].filter((part) => part !== '');
-  return parts.length > 0 ? parts.join(' · ') : undefined;
 }
 
 /** "W3", or "—" with no games yet. */
