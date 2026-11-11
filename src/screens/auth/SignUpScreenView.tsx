@@ -10,6 +10,8 @@ import {colors, spacing, typography} from '../../theme';
 import {SIGN_UP_STEP_COUNT} from '../onboarding/signUpSteps';
 
 interface SignUpScreenViewProps {
+  realName: string;
+  onChangeRealName: (text: string) => void;
   email: string;
   password: string;
   isAdult: boolean;
@@ -18,7 +20,7 @@ interface SignUpScreenViewProps {
   onChangeIsAdult: (checked: boolean) => void;
   /** Shown in red above the Continue button; null hides it. */
   error: string | null;
-  /** False until both fields are filled and the box is checked. */
+  /** False until every field is filled and the box is checked. */
   canContinue: boolean;
   onContinue: () => void;
   onLogIn: () => void;
@@ -32,6 +34,7 @@ interface SignUpScreenViewProps {
  * - The sign-up progress bar (step 1) under the header, to match the
  *   later sign-up steps.
  * - An "I'm 18 or older" checkbox instead of the "DATE OF BIRTH" field.
+ * - A required "NAME" field above Email (saved as profiles.real_name).
  * - The main button says "CONTINUE", not "CREATE ACCOUNT": the account is
  *   only created at the end of sign-up (StartingElo's Create account).
  *
@@ -39,6 +42,8 @@ interface SignUpScreenViewProps {
  * the state and does the checks.
  */
 export function SignUpScreenView({
+  realName,
+  onChangeRealName,
   email,
   password,
   isAdult,
@@ -65,6 +70,16 @@ export function SignUpScreenView({
       <Text style={styles.subtitle}>Create an account, then set up your player card.</Text>
 
       <View style={styles.fields}>
+        <MotionField
+          label="NAME"
+          placeholder="Name"
+          value={realName}
+          onChangeText={onChangeRealName}
+          autoCapitalize="words"
+          autoComplete="name"
+          // Same limit as the database (profiles.real_name).
+          maxLength={50}
+        />
         <MotionField
           label="EMAIL"
           placeholder="you@example.com"

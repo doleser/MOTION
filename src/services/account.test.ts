@@ -22,13 +22,13 @@ const m = supabase as unknown as {
 
 const row = {
   user_id: 'u1', username: 'hooper2', elo: 800, open_to_challenges: true,
-  position: null, height_cm: 188, tags: null, home_court_id: 6,
+  position: null, real_name: 'Jordan Lee', height_cm: 188, tags: null, home_court_id: 6,
   onboarded_at: '2026-11-03T18:00:00Z', appeal_count: 0,
 };
 
 function signUp(changes: Partial<CreateAccountInput> = {}): CreateAccountInput {
   return {
-    email: 'new@uw.edu', password: 'secret1', confirmedAdult: true,
+    email: 'new@uw.edu', password: 'secret1', confirmedAdult: true, realName: 'Jordan Lee',
     username: 'hooper2', level: 'intermediate', ...changes,
   };
 }
@@ -53,10 +53,20 @@ describe('createAccount', () => {
     const profile = await createAccount(signUp({heightCm: 188, homeCourtId: 6}));
     expect(m.rpc).toHaveBeenCalledWith('complete_profile', {
       p_username: 'hooper2', p_level: 'intermediate', p_position: null,
-      p_height_cm: 188, p_tags: null, p_home_court_id: 6,
+      p_height_cm: 188, p_tags: null, p_home_court_id: 6, p_real_name: 'Jordan Lee',
     });
     expect(profile).toMatchObject({username: 'hooper2', elo: 800, heightCm: 188, homeCourtId: 6});
     expect(m.auth.signOut).not.toHaveBeenCalled();
+  });
+
+  it('rejects a blank name before touching Supabase', async () => {
+    await expect(createAccount(signUp({realName: '   '}))).rejects.toMatchObject({code: 'missing_real_name'});
+    expect(m.auth.signUp).not.toHaveBeenCalled();
+  });
+
+  it('trims spaces around the name before saving it', async () => {
+    await createAccount(signUp({realName: '  Jordan Lee  '}));
+    expect(m.rpc).toHaveBeenCalledWith('complete_profile', expect.objectContaining({p_real_name: 'Jordan Lee'}));
   });
 
   it('reports an email that belongs to someone else', async () => {

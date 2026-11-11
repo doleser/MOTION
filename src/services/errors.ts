@@ -8,6 +8,7 @@ import type {AuthError, PostgrestError} from '@supabase/supabase-js';
  */
 export type ServiceErrorCode =
   | 'underage'
+  | 'missing_real_name'
   | 'invalid_email'
   | 'weak_password'
   | 'email_taken'

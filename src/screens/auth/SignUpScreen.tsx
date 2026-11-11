@@ -19,6 +19,7 @@ import {SignUpScreenView} from './SignUpScreenView';
 export function SignUpScreen({navigation, route}: AuthScreenProps<'SignUp'>) {
   const {draft, updateDraft} = useOnboardingDraft();
   // Pre-filled from the draft when the user comes back with the Back button.
+  const [realName, setRealName] = useState(draft.realName ?? '');
   const [email, setEmail] = useState(draft.email ?? '');
   const [password, setPassword] = useState(draft.password ?? '');
   const [isAdult, setIsAdult] = useState(draft.confirmedAdult ?? false);
@@ -39,7 +40,9 @@ export function SignUpScreen({navigation, route}: AuthScreenProps<'SignUp'>) {
     setError(route.params?.errorMessage ?? null);
   }
 
-  const canContinue = email.length > 0 && password.length > 0 && isAdult;
+  // A name of only spaces counts as empty.
+  const canContinue =
+    realName.trim().length > 0 && email.length > 0 && password.length > 0 && isAdult;
 
   function handleContinue() {
     // Instant checks; no server call.
@@ -50,7 +53,12 @@ export function SignUpScreen({navigation, route}: AuthScreenProps<'SignUp'>) {
     }
 
     setError(null);
-    updateDraft({email: email.trim(), password, confirmedAdult: true});
+    updateDraft({
+      realName: realName.trim(),
+      email: email.trim(),
+      password,
+      confirmedAdult: true,
+    });
     navigation.navigate('ChooseHandle');
   }
 
@@ -65,6 +73,8 @@ export function SignUpScreen({navigation, route}: AuthScreenProps<'SignUp'>) {
       {/* White clock and battery on the dark screen. */}
       {isFocused ? <StatusBar style="light" /> : null}
       <SignUpScreenView
+        realName={realName}
+        onChangeRealName={setRealName}
         email={email}
         password={password}
         isAdult={isAdult}
