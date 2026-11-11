@@ -55,7 +55,7 @@ describe('createAccount', () => {
       p_username: 'hooper2', p_level: 'intermediate', p_position: null,
       p_height_cm: 188, p_tags: null, p_home_court_id: 6, p_real_name: 'Jordan Lee',
     });
-    expect(profile).toMatchObject({username: 'hooper2', elo: 800, heightCm: 188, homeCourtId: 6});
+    expect(profile).toMatchObject({username: 'hooper2', realName: 'Jordan Lee', elo: 800, heightCm: 188, homeCourtId: 6});
     expect(m.auth.signOut).not.toHaveBeenCalled();
   });
 

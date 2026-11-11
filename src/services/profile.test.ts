@@ -1,4 +1,9 @@
-import {getAvailableUsernames, getUsernameError, STARTING_ELO_BY_LEVEL} from './profile';
+import {
+  getAvailableUsernames,
+  getMyProfile,
+  getUsernameError,
+  STARTING_ELO_BY_LEVEL,
+} from './profile';
 import {supabase} from './supabase';
 
 jest.mock('./supabase', () => ({
@@ -6,6 +11,8 @@ jest.mock('./supabase', () => ({
 }));
 
 const rpc = supabase.rpc as jest.Mock;
+const from = supabase.from as jest.Mock;
+const getSession = supabase.auth.getSession as jest.Mock;
 const TAKEN = ['hooper', 'admin'];
 
 beforeEach(() => {
@@ -59,5 +66,33 @@ describe('getAvailableUsernames', () => {
       'ok_name',
     ]);
     expect(rpc).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('getMyProfile', () => {
+  const row = {
+    user_id: 'u1', username: 'johnny_n', real_name: 'Johnny Nguyễn', elo: 800,
+    open_to_challenges: true, position: null, height_cm: null, tags: null,
+    home_court_id: null, onboarded_at: '2026-11-11T00:00:00Z', appeal_count: 0,
+  };
+
+  function mockRow(data: Record<string, unknown>) {
+    getSession.mockResolvedValue({data: {session: {user: {id: 'u1'}}}});
+    const single = jest.fn().mockResolvedValue({data, error: null});
+    const select = jest.fn(() => ({eq: () => ({single})}));
+    from.mockReturnValue({select});
+    return select;
+  }
+
+  it('asks for real_name and maps it to realName', async () => {
+    const select = mockRow(row);
+    const profile = await getMyProfile();
+    expect(select.mock.calls[0]).toEqual([expect.stringContaining('real_name')]);
+    expect(profile).toMatchObject({username: 'johnny_n', realName: 'Johnny Nguyễn'});
+  });
+
+  it('leaves realName undefined when the account has no name', async () => {
+    mockRow({...row, real_name: null});
+    expect((await getMyProfile()).realName).toBeUndefined();
   });
 });

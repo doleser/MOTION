@@ -3,13 +3,11 @@ import {StatusBar} from 'expo-status-bar';
 import {useLayoutEffect, useState} from 'react';
 import {Alert} from 'react-native';
 
-import {cmToInches, formatHeight} from '../../components/heightMath';
 import type {GameResult} from '../../components/RecentForm';
 import type {MainTabScreenProps} from '../../navigation/types';
 import {useAuth} from '../../services/AuthContext';
 import {signOut} from '../../services/auth';
 import {getErrorMessage} from '../../services/errors';
-import {PLAY_STYLE_TAGS, type Profile} from '../../services/profile';
 import {ProfileScreenView} from './ProfileScreenView';
 import {formatWinRate, type WinLoss} from './winRate';
 
@@ -73,8 +71,8 @@ export function ProfileScreen({navigation}: MainTabScreenProps<'Profile'>) {
       {/* White clock and battery on the dark screen. */}
       {isFocused ? <StatusBar style="light" /> : null}
       <ProfileScreenView
+        realName={profile?.realName}
         username={profile?.username ?? ''}
-        details={profile ? buildDetails(profile) : undefined}
         elo={profile?.elo ?? 0}
         stats={[
           {value: `${FAKE_RECORD.wins}-${FAKE_RECORD.losses}`, label: 'WIN / LOSS'},
@@ -88,20 +86,6 @@ export function ProfileScreen({navigation}: MainTabScreenProps<'Profile'>) {
       />
     </>
   );
-}
-
-/**
- * "Shooter / Playmaker · 6′ 2″". Leaves out whatever the player skipped;
- * undefined if they skipped both.
- */
-function buildDetails(profile: Profile): string | undefined {
-  const tags = (profile.tags ?? [])
-    .map((id) => PLAY_STYLE_TAGS.find((tag) => tag.id === id)?.label ?? id)
-    .join(' / ');
-  const height =
-    profile.heightCm !== undefined ? formatHeight(cmToInches(profile.heightCm)) : '';
-  const parts = [tags, height].filter((part) => part !== '');
-  return parts.length > 0 ? parts.join(' · ') : undefined;
 }
 
 /** "W3", or "—" with no games yet. */
