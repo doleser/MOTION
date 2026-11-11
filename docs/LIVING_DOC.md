@@ -1047,6 +1047,8 @@ Indexes on court locations serve nearby search (Sec 4). Constraints keep an open
 
 We plan to have people outside of our group to try the app and do things like find a court, check in, and send a challenge. Everyone will try the same tasks without us walking them through it. We’ll keep track of whether they finish and where they get stuck or need help. We also want to see if people understand why they have to check in before seeing who is playing. We’ll also interview them afterward to see what they thought of the app and get their suggestions on what we could improve. We’ll also do the timing and block/report checks listed in our non functional requirements with ten testers. Along with finding courts and sending challenges these tasks will help show us whether new users can get through the main parts of the app without our help.
 
+After a two-person hallway test of the beta, the signup button stays Create Account. The profile should say what the starting Elo means. The map should make the player count and the location dot easier to see. When check-in can show who is at a court, that screen should be tested with someone who expects a roster. A short in-app guide remains to be written.
+
 ## Backend/Database tests
 
 We test rating changes, court counts, check-in privacy, and new user journeys.
