@@ -16,6 +16,7 @@
 - Github: <https://github.com/doleser/MOTION>
 - Living Document: <https://docs.google.com/document/d/1Iv4nRQnxfLWo1CbQmWadlzeJVDBckgoaqx1jzAAFiJE/edit?usp=sharing>
 - Figma: <https://www.figma.com/design/jTN8WKsfe4dxQ8Dpm8BvE6/MOTION-%E2%80%94-UI-DEMO?node-id=2-241&t=VWUW4ske8aWmPs3B-0>
+- Beta landing page: <https://doleser.github.io/MOTION/usability/>
 - Other links (to be added)
 
 **Communication Policy:**
@@ -78,7 +79,7 @@ Team check-in, the team result variation, and Use cases 6 and 7 are future featu
 
 ### Triggers
 
-- The new player opens the app for the first time and taps Get started.
+- The new player opens the app for the first time and taps Create Account.
 
 ### Preconditions
 
@@ -94,7 +95,7 @@ Team check-in, the team result variation, and Use cases 6 and 7 are future featu
 
 ### List of steps (success scenario)
 
-1. New player taps Get started and chooses a sign-up method.
+1. New player taps Create Account and chooses a sign-up method.
 2. New player enters credentials and confirms they are 18 or older.
 3. System creates the account and verifies the player's identity.
 4. New player chooses a handle and optionally adds position, height, and play-style tags.
@@ -1046,6 +1047,8 @@ Indexes on court locations serve nearby search (Sec 4). Constraints keep an open
 ## Usability Tests - UI/UX
 
 We plan to have people outside of our group to try the app and do things like find a court, check in, and send a challenge. Everyone will try the same tasks without us walking them through it. We’ll keep track of whether they finish and where they get stuck or need help. We also want to see if people understand why they have to check in before seeing who is playing. We’ll also interview them afterward to see what they thought of the app and get their suggestions on what we could improve. We’ll also do the timing and block/report checks listed in our non functional requirements with ten testers. Along with finding courts and sending challenges these tasks will help show us whether new users can get through the main parts of the app without our help.
+
+We ran two usability tests on signup and finding a court. After the first test we changed Get Started to Create Account. The second tester found signup on their own, so we’re keeping that change. We’d fix the height control first and make the location dot and player count easier to see. We also want the profile to explain what the starting Elo means. Multiple home courts can wait since it changes signup and how we save court preferences. When check-in can show who is at a court, that screen should be tested with someone who expects a roster. A short in-app guide remains to be written.
 
 ## Backend/Database tests
 
