@@ -308,8 +308,9 @@ export function getCourtPreview(courtId: number, playerCount: number): CourtPrev
  * Calls `onUpdate` whenever the player count changes at one of `courtIds`.
  * Returns a function that stops listening; call it on unmount.
  *
- * The database broadcasts {courtId, playerCount} on 'court:<id>' whenever
- * someone checks in or out there. Works while signed out.
+ * The database broadcasts {courtId, playerCount} on the private topic
+ * 'court:<id>' whenever someone checks in or out there. Private means only the
+ * database can send; anyone, even signed out, can listen.
  */
 export function subscribeToCourtCounts(
   courtIds: readonly number[],
@@ -317,7 +318,7 @@ export function subscribeToCourtCounts(
 ): () => void {
   const channels = courtIds.map((courtId) =>
     supabase
-      .channel(`court:${courtId}`)
+      .channel(`court:${courtId}`, {config: {private: true}})
       .on('broadcast', {event: 'count'}, ({payload}) => {
         onUpdate({courtId: payload.courtId, playerCount: payload.playerCount});
       })

@@ -139,10 +139,12 @@ $$;
 -- ---------------------------------------------------------------
 -- Grants: clients may call the RPCs; the sweep is internal only.
 -- ---------------------------------------------------------------
-revoke all on function public.confirm_still_here(bigint, boolean) from public;
-revoke all on function public.get_my_check_in() from public;
-revoke all on function public.get_court_players(bigint) from public;
-revoke all on function public.expire_check_ins() from public;
+-- "from public" is not enough on Supabase: its default privileges also grant
+-- execute directly to anon and authenticated, so revoke from them by name.
+revoke all on function public.confirm_still_here(bigint, boolean) from public, anon;
+revoke all on function public.get_my_check_in() from public, anon;
+revoke all on function public.get_court_players(bigint) from public, anon;
+revoke all on function public.expire_check_ins() from public, anon, authenticated;
 
 grant execute on function public.confirm_still_here(bigint, boolean) to authenticated;
 grant execute on function public.get_my_check_in() to authenticated;

@@ -245,8 +245,8 @@ describe('subscribeToCourtCounts', () => {
 
     const unsubscribe = subscribeToCourtCounts([1, 3], onUpdate);
 
-    expect(channel).toHaveBeenCalledWith('court:1');
-    expect(channel).toHaveBeenCalledWith('court:3');
+    expect(channel).toHaveBeenCalledWith('court:1', {config: {private: true}});
+    expect(channel).toHaveBeenCalledWith('court:3', {config: {private: true}});
     fake.send('court:3', {courtId: 3, playerCount: 7});
     expect(onUpdate).toHaveBeenCalledWith({courtId: 3, playerCount: 7});
 

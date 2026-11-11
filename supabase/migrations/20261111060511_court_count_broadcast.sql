@@ -4,8 +4,14 @@
 -- event 'count', payload {courtId, playerCount}.
 --
 -- The count is public information, and the broadcast carries no player names,
--- so anyone (even signed out) may listen. Row-level security on check_ins is
--- unaffected: nobody can read other players' rows through Realtime.
+-- so anyone (even signed out) may listen. The topic is PRIVATE and has a
+-- read-only policy and NO insert policy, so only the database can send counts;
+-- on a public topic any client with the anon key could send fake ones.
+-- Row-level security on check_ins is unaffected: nobody can read other
+-- players' rows through Realtime.
+--
+-- Ship together with the frontend change: channels must be created with
+-- {config: {private: true}} (see subscribeToCourtCounts in courts.ts).
 
 create or replace function public.broadcast_court_count(p_court_id bigint)
 returns void
@@ -26,7 +32,7 @@ begin
     jsonb_build_object('courtId', p_court_id, 'playerCount', v_count),
     'count',
     'court:' || p_court_id,
-    false  -- public topic
+    true  -- private topic: only readers allowed by the policy below can listen
   );
 end;
 $$;
@@ -53,6 +59,13 @@ drop trigger if exists check_ins_broadcast_trg on public.check_ins;
 create trigger check_ins_broadcast_trg
   after insert or update or delete on public.check_ins
   for each row execute function public.check_ins_broadcast();
+
+-- Listening is allowed for everyone on court topics, broadcast messages only.
+-- Deliberately no insert policy: clients cannot send on these topics.
+drop policy if exists "Anyone can read court counts" on realtime.messages;
+create policy "Anyone can read court counts" on realtime.messages
+  for select to anon, authenticated
+  using (realtime.topic() like 'court:%' and extension = 'broadcast');
 
 -- Internal only: clients must not call these directly.
 revoke all on function public.broadcast_court_count(bigint) from public, anon, authenticated;
