@@ -1,22 +1,18 @@
 /**
  * Courts service.
  *
- * listCourts reads the `courts` table in Supabase. The map functions are
- * still STUBS with fake data until the backend has what they need; screens
- * won't change when they switch over:
+ * listCourts reads the `courts` table in Supabase. getNearbyCourts and getCourt
+ * call the `nearby_courts` and `get_court` database functions (needs the
+ * court_functions migration) and subscribeToCourtCounts listens for live counts
+ * (needs the court_count_broadcast migration).
  *
- *   getNearbyCourts -> supabase.rpc('nearby_courts', {lat, lng, radius, max_results})
- *                      (needs nearby_courts to return latitude/longitude)
- *   getCourt        -> supabase.rpc('get_court', {court_id})  (not written yet)
- *   subscribeToCourtCounts -> Realtime broadcast on 'court:<id>' (not set up yet)
+ * Still STUBS with fake data until the backend has what they need; screens
+ * won't change when they switch over:
+ *   - area, accessNote, photoUrl, onTheWay, sessionLive (see COURT_EXTRAS)
+ *   - getCourtPreview's activity line
  */
 import {ServiceError} from './errors';
 import {supabase} from './supabase';
-
-/** Stub only: waits like a network request would. */
-function fakeDelay(ms = 400): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 export interface Court {
   id: number;
@@ -113,16 +109,6 @@ const STUB_COURTS: readonly StubCourt[] = [
   {id: 6, name: 'UW IMA', latitude: 47.653522, longitude: -122.301431, status: 'active', indoor: true, lit: true, hoopCount: null},
 ];
 
-/** Fake live player counts. The stub subscription changes these. */
-const stubPlayerCounts = new Map<number, number>([
-  [1, 3],
-  [2, 0],
-  [3, 6],
-  [4, 0],
-  [5, 2],
-  [6, 12],
-]);
-
 interface CourtExtras {
   area: string | null;
   accessNote: string | null;
@@ -171,8 +157,31 @@ export function distanceBetween(a: LatLng, b: LatLng): number {
   return 2 * earthRadius * Math.asin(Math.sqrt(h));
 }
 
-function playerCountOf(courtId: number): number {
-  return stubPlayerCounts.get(courtId) ?? 0;
+
+// ---------- Database rows ----------
+
+interface NearbyCourtRow {
+  court_id: number;
+  name: string;
+  latitude: number;
+  longitude: number;
+  status: CourtStatus;
+  player_count: number;
+  avg_elo: number | null;
+  distance_m: number;
+}
+
+interface CourtDetailsRow {
+  court_id: number;
+  name: string;
+  latitude: number;
+  longitude: number;
+  status: CourtStatus;
+  player_count: number;
+  avg_elo: number | null;
+  lit: boolean | null;
+  indoor: boolean | null;
+  hoop_count: number | null;
 }
 
 // ---------- Public API ----------
@@ -203,39 +212,56 @@ export async function getNearbyCourts({
   radiusMeters,
   maxResults = 10,
 }: NearbyCourtsQuery): Promise<CourtPin[]> {
-  await fakeDelay(300);
-  const center = {latitude, longitude};
-  return STUB_COURTS.map((court) => ({
-    id: court.id,
-    name: court.name,
-    status: court.status,
-    latitude: court.latitude,
-    longitude: court.longitude,
-    playerCount: playerCountOf(court.id),
-    // Stub: no fake Elo.
-    avgElo: null,
-    distanceMeters: distanceBetween(center, court),
-    sessionLive: (COURT_EXTRAS[court.id] ?? NO_EXTRAS).sessionLive,
-  }))
-    .filter((court) => court.distanceMeters <= radiusMeters)
-    .sort((a, b) => a.distanceMeters - b.distanceMeters)
-    .slice(0, maxResults);
+  const {data, error} = await supabase.rpc('nearby_courts', {
+    p_lat: latitude,
+    p_lng: longitude,
+    p_radius_m: radiusMeters,
+    p_limit: maxResults,
+  });
+  if (error) {
+    throw error;
+  }
+  return (data as NearbyCourtRow[]).map((row) => ({
+    id: row.court_id,
+    name: row.name,
+    status: row.status,
+    latitude: row.latitude,
+    longitude: row.longitude,
+    playerCount: row.player_count,
+    avgElo: row.avg_elo,
+    distanceMeters: row.distance_m,
+    // TODO(backend): from the sessions table once it exists.
+    sessionLive: (COURT_EXTRAS[row.court_id] ?? NO_EXTRAS).sessionLive,
+  }));
 }
 
 /** One court's details. Throws 'court_not_found' for an unknown id. */
 export async function getCourt(courtId: number): Promise<CourtDetails> {
-  await fakeDelay();
-  const court = STUB_COURTS.find((c) => c.id === courtId);
-  if (!court) {
+  const {data, error} = await supabase.rpc('get_court', {p_court_id: courtId});
+  if (error) {
+    if (error.message === 'Court not found.') {
+      throw new ServiceError('court_not_found', "We couldn't find that court.");
+    }
+    throw error;
+  }
+  const row = (data as CourtDetailsRow[])[0];
+  if (!row) {
     throw new ServiceError('court_not_found', "We couldn't find that court.");
   }
-  const extras = COURT_EXTRAS[court.id] ?? NO_EXTRAS;
+  const extras = COURT_EXTRAS[row.court_id] ?? NO_EXTRAS;
   return {
-    ...court,
-    playerCount: playerCountOf(court.id),
-    avgElo: null,
+    id: row.court_id,
+    name: row.name,
+    status: row.status,
+    latitude: row.latitude,
+    longitude: row.longitude,
+    playerCount: row.player_count,
+    avgElo: row.avg_elo,
+    indoor: row.indoor,
+    lit: row.lit,
+    hoopCount: row.hoop_count,
     isFullCourt:
-      extras.isFullCourt ?? (court.hoopCount === null ? null : court.hoopCount >= 2),
+      extras.isFullCourt ?? (row.hoop_count === null ? null : row.hoop_count >= 2),
     area: extras.area,
     accessNote: extras.accessNote,
     photoUrl: null,
@@ -278,28 +304,29 @@ export function getCourtPreview(courtId: number, playerCount: number): CourtPrev
   return {typeLine, activityLine};
 }
 
-/** How often the stub pretends someone checks in or out. */
-const STUB_UPDATE_MS = 5000;
-
 /**
  * Calls `onUpdate` whenever the player count changes at one of `courtIds`.
  * Returns a function that stops listening; call it on unmount.
  *
- * Stub: every few seconds, one of the courts gains or loses a player.
+ * The database broadcasts {courtId, playerCount} on the private topic
+ * 'court:<id>' whenever someone checks in or out there. Private means only the
+ * database can send; anyone, even signed out, can listen.
  */
 export function subscribeToCourtCounts(
   courtIds: readonly number[],
   onUpdate: (update: CourtCountUpdate) => void,
 ): () => void {
-  if (courtIds.length === 0) {
-    return () => {};
-  }
-  const timer = setInterval(() => {
-    const courtId = courtIds[Math.floor(Math.random() * courtIds.length)];
-    const current = playerCountOf(courtId);
-    const next = Math.max(0, current + (Math.random() < 0.5 ? -1 : 1));
-    stubPlayerCounts.set(courtId, next);
-    onUpdate({courtId, playerCount: next});
-  }, STUB_UPDATE_MS);
-  return () => clearInterval(timer);
+  const channels = courtIds.map((courtId) =>
+    supabase
+      .channel(`court:${courtId}`, {config: {private: true}})
+      .on('broadcast', {event: 'count'}, ({payload}) => {
+        onUpdate({courtId: payload.courtId, playerCount: payload.playerCount});
+      })
+      .subscribe(),
+  );
+  return () => {
+    channels.forEach((channel) => {
+      void supabase.removeChannel(channel);
+    });
+  };
 }
