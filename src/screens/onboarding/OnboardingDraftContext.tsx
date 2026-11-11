@@ -27,6 +27,7 @@ import type {SkillLevel} from '../../services/profile';
 /** Every field is optional because it fills in one screen at a time. */
 export interface OnboardingDraft {
   // From SignUp
+  realName?: string;
   email?: string;
   password?: string;
   confirmedAdult?: boolean;

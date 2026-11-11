@@ -21,6 +21,7 @@ import {type OnboardingDraft, useOnboardingDraft} from './OnboardingDraftContext
 const SIGN_UP_ERRORS: readonly ServiceErrorCode[] = [
   'email_taken',
   'underage',
+  'missing_real_name',
   'invalid_email',
   'weak_password',
 ];
@@ -120,9 +121,9 @@ export function StartingEloScreen({navigation}: AuthScreenProps<'StartingElo'>) 
   }
 
   async function handleCreateAccount() {
-    const {email, password, confirmedAdult, username, level, ...details} = draft;
+    const {realName, email, password, confirmedAdult, username, level, ...details} = draft;
     // Shouldn't happen: earlier steps always fill these. Go back to be safe.
-    if (!email || !password || !confirmedAdult) {
+    if (!realName || !email || !password || !confirmedAdult) {
       navigation.popTo('SignUp');
       return;
     }
@@ -141,6 +142,7 @@ export function StartingEloScreen({navigation}: AuthScreenProps<'StartingElo'>) 
         email,
         password,
         confirmedAdult,
+        realName,
         username,
         level: level ?? 'skipped',
         ...details,

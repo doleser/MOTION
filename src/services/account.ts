@@ -7,6 +7,8 @@ export interface CreateAccountInput {
   password: string;
   /** The user ticked "I'm 18 or older". Rejected here if false. */
   confirmedAdult: boolean;
+  /** Required. Saved as profiles.real_name; surrounding spaces are trimmed. */
+  realName: string;
   username: string;
   level: SkillLevel;
   position?: string;
@@ -17,7 +19,8 @@ export interface CreateAccountInput {
 
 /**
  * Signs up, saves the profile, leaves the user signed in. Throws a ServiceError:
- * - SignUp screen: 'email_taken', 'underage', 'invalid_email', 'weak_password'
+ * - SignUp screen: 'email_taken', 'underage', 'missing_real_name', 'invalid_email',
+ *   'weak_password'
  * - ChooseHandle screen: 'username_taken', 'invalid_username'
  * If anything fails after the account exists, the user is signed out, so the app
  * never holds a session for an account with no profile. Retrying with the same
@@ -28,6 +31,11 @@ export async function createAccount(input: CreateAccountInput): Promise<Profile>
 
   if (!confirmedAdult) {
     throw new ServiceError('underage', 'You must be 18 or older to use Motion.');
+  }
+  // The database requires it too; checking here avoids creating the account first.
+  const realName = input.realName.trim();
+  if (!realName) {
+    throw new ServiceError('missing_real_name', 'Enter your name to continue.');
   }
   const usernameError = getUsernameError(username);
   if (usernameError) {
@@ -44,6 +52,7 @@ export async function createAccount(input: CreateAccountInput): Promise<Profile>
       p_height_cm: input.heightCm ?? null,
       p_tags: input.tags ?? null,
       p_home_court_id: input.homeCourtId ?? null,
+      p_real_name: realName,
     });
     if (error) {
       const mapped = fromCompleteProfileError(error, username);

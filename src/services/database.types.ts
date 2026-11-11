@@ -143,14 +143,14 @@ isOneToOne: false
                   ]
                 },"profiles": {
                   Row: {
-                    "appeal_count": number,"created_at": string,"elo": number,"height_cm": number | null,"home_court_id": number | null,"onboarded_at": string | null,"open_to_challenges": boolean,"position": string | null,"tags": (string)[] | null,"user_id": string,"username": string | null
+                    "appeal_count": number,"created_at": string,"elo": number,"height_cm": number | null,"home_court_id": number | null,"onboarded_at": string | null,"open_to_challenges": boolean,"position": string | null,"real_name": string | null,"tags": (string)[] | null,"user_id": string,"username": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "appeal_count"?: number,"created_at"?: string,"elo"?: number,"height_cm"?: number | null,"home_court_id"?: number | null,"onboarded_at"?: string | null,"open_to_challenges"?: boolean,"position"?: string | null,"tags"?: (string)[] | null,"user_id": string,"username"?: string | null
+                    "appeal_count"?: number,"created_at"?: string,"elo"?: number,"height_cm"?: number | null,"home_court_id"?: number | null,"onboarded_at"?: string | null,"open_to_challenges"?: boolean,"position"?: string | null,"real_name"?: string | null,"tags"?: (string)[] | null,"user_id": string,"username"?: string | null
                   }
                   Update: {
-                    "appeal_count"?: number,"created_at"?: string,"elo"?: number,"height_cm"?: number | null,"home_court_id"?: number | null,"onboarded_at"?: string | null,"open_to_challenges"?: boolean,"position"?: string | null,"tags"?: (string)[] | null,"user_id"?: string,"username"?: string | null
+                    "appeal_count"?: number,"created_at"?: string,"elo"?: number,"height_cm"?: number | null,"home_court_id"?: number | null,"onboarded_at"?: string | null,"open_to_challenges"?: boolean,"position"?: string | null,"real_name"?: string | null,"tags"?: (string)[] | null,"user_id"?: string,"username"?: string | null
                   }
                   Relationships: [
                     {
@@ -198,7 +198,7 @@ isOneToOne: false
         isSetofReturn: false
       } },
 "complete_profile":
-{ Args: { "p_height_cm"?: number,"p_home_court_id"?: number,"p_level": string,"p_position"?: string,"p_tags"?: (string)[],"p_username": string }; Returns: {
+{ Args: { "p_height_cm"?: number,"p_home_court_id"?: number,"p_level": string,"p_position"?: string,"p_real_name"?: string,"p_tags"?: (string)[],"p_username": string }; Returns: {
               "appeal_count": number,
 "created_at": string,
 "elo": number,
@@ -207,6 +207,7 @@ isOneToOne: false
 "onboarded_at": string | null,
 "open_to_challenges": boolean,
 "position": string | null,
+"real_name": string | null,
 "tags": (string)[] | null,
 "user_id": string,
 "username": string | null
