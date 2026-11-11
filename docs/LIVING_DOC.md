@@ -478,10 +478,10 @@ Team check-in, the team result variation, and Use cases 6 and 7 are future featu
 # 5. External Requirements
 
 - Robust: The server rejects handles with abnormal symbols or outside of the 3-16 character range, impossible or out-of-range scores, and check-ins from outside a 150 meter radius. If the network drops and causes an action to fail (completing a check-in, sending an invite, posting results, sending chats), the panel stays on screen and the user is prompted to retry the action.
-  - **To check:** automated testing for all rejection cases above, including on airplane mode or disconnected from a signal. Invalid usernames are tested. Invalid scores and out-of-range check-ins are to be implemented.
-- Other people can run it: The README will have an Expo GO QR code, and the Supabase project is already hosted, so a tester can scan the code and reach the map. No desktop build is required.
-- Building: the README will cover cloning the repo, the .env file, starting a Supabase project, migrations, and Expo.
-  - **To check:** a test subject outside the team can follow the README and build Motion with the seeded courts.
+  - **To check:** automated testing for all rejection cases above, including on airplane mode or disconnected from a signal. Invalid usernames and check-ins from outside 150 meters are tested. Invalid scores and network-drop retries are to be implemented.
+- Other people can run it: The Supabase project is already hosted, so a tester clones the repo, adds the hosted keys to `.env`, runs `npx expo start`, and scans the QR code it prints with Expo Go. No desktop build is required.
+- Building: the README covers cloning the repo, installing, the `.env` file, and starting the app with Expo.
+  - **To check:** a test subject outside the team can follow the README and run Motion on their phone.
 - The four concrete goals for the first working product, excluding the stretch goals, are achievable within the given time frame for a team of 6 people, all based in Seattle.
 
 # 6. Team Process Description
@@ -1041,22 +1041,22 @@ Indexes on court locations serve nearby search (Sec 4). Constraints keep an open
 
 - `import_courts` (weekly): Pull OSM and Seattle data, skip duplicates and manually edited courts, log the results.
 
-## Test plan & bugs
+# 9. Test Plan & Bugs
 
-### Usability Tests - UI/UX
+## Usability Tests - UI/UX
 
 We plan to have people outside of our group to try the app and do things like find a court, check in, and send a challenge. Everyone will try the same tasks without us walking them through it. We’ll keep track of whether they finish and where they get stuck or need help. We also want to see if people understand why they have to check in before seeing who is playing. We’ll also interview them afterward to see what they thought of the app and get their suggestions on what we could improve. We’ll also do the timing and block/report checks listed in our non functional requirements with ten testers. Along with finding courts and sending challenges these tasks will help show us whether new users can get through the main parts of the app without our help.
 
-### Backend/Database tests
+## Backend/Database tests
 
 We test rating changes, court counts, check-in privacy, and new user journeys.
 
-- **Unit tests:** pgTAP checks each RLS policy with two test accounts (one checked in, one not), including that names stay hidden until check-in. Jest tests each `services/` module with Supabase, including invalid usernames. To be implemented: reject a check-in at 200 meters, reject a ranked Elo gap over 150, a void leaves `profiles.elo` unchanged, and `confirm_result` writes `profiles.elo` and `elo_history` together.
+- **Unit tests:** pgTAP checks each RLS policy with two test accounts (one checked in, one not), including that names stay hidden until check-in. Jest tests each `services/` module with Supabase, including invalid usernames. pgTAP also rejects a check-in from 200 meters away. To be implemented: reject a ranked Elo gap over 150, a void leaves `profiles.elo` unchanged, and `confirm_result` writes `profiles.elo` and `elo_history` together.
 - **Integration:** GitHub Actions runs that pgTAP suite on a local Supabase with the migrations and seed. CI applies every migration to an empty database on each pull request. It does not run a simulator or time `nearby_courts`. A separate check, not in CI, uses one simulator and one emulator to confirm a check-in appears on the second phone within 5 seconds (Section 4).
 - **Usability:** Ten outsiders, with no walkthrough, sign up, find a court, check in, send a challenge, and find block and report (Section 4). We record where they stop, change the design, and rerun those tasks.
 - **Bugs:** Each failure in testing or use is a GitHub Issue with the screen, account, and server response.
 
-### Test Automation and CI
+## Test Automation and CI
 
 - **Test Automation:** Jest with the jest-expo preset. Installed for Expo SDK 58. Following [Expo’s unit-testing guide](https://docs.expo.dev/develop/unit-testing/). We use Jest because it tests TS service functions in Node without requiring a phone or database. Jest also runs easily in CI (GitHub Actions) on every pull request. We’re using pgTAP because its tests can act as a specific user and check that the database refuses based on our Postgres row-level security and permissions for ELO and privacy.
 - **Adding a Test:**
@@ -1068,7 +1068,7 @@ We test rating changes, court counts, check-in privacy, and new user journeys.
   - **Triggers:** a push to any branch, a PR to `main`, or a manual run. (any `on:` entries in workflow file)
 - **Frontend Testing:** Frontend testing will be done through use of Expo Go to constantly check whether the UI is behaving properly. We decided to go with Expo Go since it was built to track React components right on your own personal device and wasn’t difficult to set up. The low overhead allows for quick testing of the UI and frontend components.
 
-### External Feedback:
+## External Feedback:
 
 - External feedback will be most important to create an intuitive, pleasant UI. This can be obtained through surveys and usability testing while in the design phase.
 
