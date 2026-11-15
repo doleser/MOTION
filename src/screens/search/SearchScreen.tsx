@@ -1,82 +1,139 @@
-import {Pressable, StyleSheet, Text, View} from 'react-native';
+import {useFocusEffect, useIsFocused} from '@react-navigation/native';
+import {StatusBar} from 'expo-status-bar';
+import {useCallback, useEffect, useState} from 'react';
+import {Keyboard} from 'react-native';
 
-import {MotionButton} from '../../components/MotionButton';
 import type {SearchScreenProps} from '../../navigation/types';
-import {colors, opacity, sizes, typography} from '../../theme';
-import {PlaceholderLayout} from './PlaceholderLayout';
+import {getErrorMessage} from '../../services/errors';
+import {
+  getPendingChallengeCount,
+  searchPlayers,
+  type PlayerSearchResult,
+} from '../../services/players';
+import {parseSearchQuery} from '../../services/searchQuery';
+import {SearchScreenView, type SearchStatus} from './SearchScreenView';
 
-import InboxIcon from '../../../assets/icons/inbox.svg';
+/** Wait this long after the last keystroke before searching (like ChooseHandle). */
+const SEARCH_DELAY_MS = 400;
 
-// TODO: replace with a real search (and real user IDs) once the service exists.
-const FAKE_RESULT = {userId: 'fake-player-1', username: 'sample_player'};
-// TODO: load the number of pending challenges the user has received.
-const FAKE_PENDING_COUNT = 2;
+/**
+ * The answer to one search. `query` and `attempt` say which search it
+ * answers, so an old answer is never shown for what's typed now.
+ */
+type SearchAnswer = {query: string; attempt: number} & (
+  | {ok: true; players: PlayerSearchResult[]}
+  | {ok: false; message: string}
+);
 
-/** PLACEHOLDER: player search. The inbox icon opens the challenges inbox. */
+/**
+ * Search tab: finds players by username as the user types (~400 ms after
+ * they stop), and keeps the inbox badge up to date.
+ * SearchScreenView draws the screen.
+ */
 export function SearchScreen({navigation}: SearchScreenProps<'SearchHome'>) {
-  const inboxLabel =
-    FAKE_PENDING_COUNT > 0
-      ? `Challenges inbox, ${FAKE_PENDING_COUNT} pending`
-      : 'Challenges inbox';
+  const isFocused = useIsFocused();
+  const [query, setQuery] = useState('');
+  const [answer, setAnswer] = useState<SearchAnswer | null>(null);
+  // Bumped by "Try again" to run the same search again.
+  const [attempt, setAttempt] = useState(0);
+  const [pendingCount, setPendingCount] = useState(0);
 
-  const inboxButton = (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={inboxLabel}
-      onPress={() => navigation.navigate('ChallengesInbox')}
-      style={({pressed}) => [styles.inbox, pressed && styles.pressed]}>
-      {/* The SVG file sets its own 24 x 24 size. */}
-      <InboxIcon />
-      {FAKE_PENDING_COUNT > 0 ? (
-        <View style={styles.badge}>
-          <Text style={styles.badgeText}>{FAKE_PENDING_COUNT}</Text>
-        </View>
-      ) : null}
-    </Pressable>
+  const parsed = parseSearchQuery(query);
+  // Trimmed and lowercase, so "Joh" and "joh " don't search twice.
+  const searchQuery = parsed.kind === 'ok' ? parsed.query : null;
+
+  // Search once typing pauses. Typing again cancels the waiting search,
+  // and `isCurrent` drops the answer of any search that's been replaced,
+  // so a slow "jo" can never overwrite a newer "joh".
+  useEffect(() => {
+    if (searchQuery === null) {
+      return;
+    }
+    let isCurrent = true;
+    const timer = setTimeout(async () => {
+      try {
+        const players = await searchPlayers(searchQuery);
+        if (isCurrent) {
+          setAnswer({query: searchQuery, attempt, ok: true, players});
+        }
+      } catch (e) {
+        if (isCurrent) {
+          setAnswer({query: searchQuery, attempt, ok: false, message: getErrorMessage(e)});
+        }
+      }
+    }, SEARCH_DELAY_MS);
+
+    return () => {
+      isCurrent = false;
+      clearTimeout(timer);
+    };
+  }, [searchQuery, attempt]);
+
+  // Refresh the badge every time this screen comes back into view (e.g.
+  // after accepting a challenge in the inbox).
+  useFocusEffect(
+    useCallback(() => {
+      let isCurrent = true;
+      getPendingChallengeCount().then(
+        (count) => {
+          if (isCurrent) {
+            setPendingCount(count);
+          }
+        },
+        () => {
+          // The badge is a hint, not worth an error message: keep the last count.
+        },
+      );
+      return () => {
+        isCurrent = false;
+      };
+    }, []),
   );
+
+  function getStatus(): SearchStatus {
+    switch (parsed.kind) {
+      case 'empty':
+        return {kind: 'idle'};
+      case 'invalid':
+        // No username can match, so there's nothing to search.
+        return {kind: 'no_results', text: query.trim()};
+      case 'ok': {
+        // Only an answer for what's typed now (and this try) counts.
+        const current =
+          answer?.query === parsed.query && answer.attempt === attempt ? answer : null;
+        if (!current) {
+          return {kind: 'loading'};
+        }
+        if (!current.ok) {
+          return {kind: 'error', message: current.message};
+        }
+        return current.players.length > 0
+          ? {kind: 'results', players: current.players}
+          : {kind: 'no_results', text: query.trim()};
+      }
+    }
+  }
+
+  function openPlayer(userId: string) {
+    Keyboard.dismiss();
+    navigation.navigate('PlayerProfile', {userId});
+  }
 
   return (
-    <PlaceholderLayout
-      title="SEARCH"
-      headerRight={inboxButton}
-      note="Search for players by username. Results will show here.">
-      <MotionButton
-        label={`@${FAKE_RESULT.username} (fake result)`}
-        variant="secondary"
-        onPress={() => navigation.navigate('PlayerProfile', {userId: FAKE_RESULT.userId})}
+    <>
+      {/* White clock and battery on the dark screen. */}
+      {isFocused ? <StatusBar style="light" /> : null}
+      <SearchScreenView
+        query={query}
+        onChangeQuery={setQuery}
+        // Results update as they type, so "Search" on the keyboard just closes it.
+        onSubmitQuery={Keyboard.dismiss}
+        status={getStatus()}
+        onRetry={() => setAttempt((n) => n + 1)}
+        onSelectPlayer={openPlayer}
+        pendingCount={pendingCount}
+        onOpenInbox={() => navigation.navigate('ChallengesInbox')}
       />
-    </PlaceholderLayout>
+    </>
   );
 }
-
-const BADGE_SIZE = 16;
-
-const styles = StyleSheet.create({
-  inbox: {
-    width: sizes.touchTarget,
-    height: sizes.touchTarget,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pressed: {
-    opacity: opacity.pressed,
-  },
-  // Not in Figma yet: a small yellow circle on the icon's top-right corner.
-  badge: {
-    position: 'absolute',
-    top: 4,
-    right: 2,
-    minWidth: BADGE_SIZE,
-    height: BADGE_SIZE,
-    paddingHorizontal: 4,
-    borderRadius: BADGE_SIZE / 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.yellow,
-  },
-  badgeText: {
-    ...typography.meta,
-    lineHeight: BADGE_SIZE,
-    color: colors.bg,
-  },
-});

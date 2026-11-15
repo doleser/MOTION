@@ -38,8 +38,9 @@ export function ProfileScreenView({
   return (
     // Bottom edge left out: the tab bar already sits above the home bar.
     <SafeAreaView style={styles.screen} edges={['top']}>
-      {/* A tab, so there's nothing to go back to: no back arrow. */}
-      <ScreenHeader title="YOUR PROFILE" />
+      {/* A tab, so there's nothing to go back to: no back arrow, and the
+          title starts at the left edge (same as Player Search). */}
+      <ScreenHeader title="YOUR PROFILE" reserveBackSpace={false} />
       <View style={styles.divider} />
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
