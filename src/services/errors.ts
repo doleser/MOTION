@@ -20,7 +20,16 @@ export type ServiceErrorCode =
   | 'court_unavailable'
   | 'already_checked_in'
   | 'not_checked_in'
-  | 'court_not_found';
+  | 'court_not_found'
+  // Player profiles and challenges (players.ts, challenges.ts)
+  | 'player_not_found'
+  | 'invalid_match_length'
+  | 'challenge_time_passed'
+  | 'challenge_too_far_ahead'
+  | 'not_accepting_challenges'
+  | 'challenge_pending'
+  | 'challenge_cooldown'
+  | 'challenger_busy';
 
 export class ServiceError extends Error {
   readonly code: ServiceErrorCode;

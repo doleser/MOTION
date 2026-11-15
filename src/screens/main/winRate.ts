@@ -1,6 +1,8 @@
 /**
- * Win rate, as plain functions (no UI) so they can be tested.
+ * Win rate and streak, as plain functions (no UI) so they can be tested.
+ * Used by both the Profile tab and other players' profiles.
  */
+import type {PlayerRecord} from '../../services/records';
 
 /** A player's games, as the backend would send them. */
 export interface WinLoss {
@@ -26,4 +28,9 @@ export function getWinRate({wins, losses}: WinLoss): number | null {
 export function formatWinRate(record: WinLoss): string {
   const rate = getWinRate(record);
   return rate === null ? '—' : `${rate}%`;
+}
+
+/** What the profile screens show for a streak: "W3", or "—" with no games yet. */
+export function formatStreak(streak: PlayerRecord['streak']): string {
+  return streak && streak.count > 0 ? `${streak.result}${streak.count}` : '—';
 }

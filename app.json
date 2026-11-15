@@ -35,7 +35,8 @@
           "locationWhenInUsePermission": "Motion uses your location to show courts near you and to check in when you're at a court."
         }
       ],
-      "expo-video"
+      "expo-video",
+      "@react-native-community/datetimepicker"
     ]
   }
 }

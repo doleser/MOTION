@@ -7,25 +7,22 @@ interface PlayerRowProps {
   realName: string;
   username: string;
   elo: number;
-  onPress: () => void;
+  /** Leave out for a row that only shows who someone is (not tappable). */
+  onPress?: () => void;
 }
 
 /**
  * One player in a list: an initials square, full name and @username, and
- * their Elo on the right. Tappable.
+ * their Elo on the right. Tappable when `onPress` is given.
  * Figma: "MVP / Player row" (as used on SEARCH / Players).
  *
  * TODO: Figma shows a rank word under the Elo ("STARTER"). Add it once the
  * backend sends one; the app must never work out ranks itself.
  */
 export function PlayerRow({realName, username, elo, onPress}: PlayerRowProps) {
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${realName}, @${username}, Elo ${elo}`}
-      accessibilityHint="Opens their profile"
-      onPress={onPress}
-      style={({pressed}) => [styles.row, pressed && styles.pressed]}>
+  const label = `${realName}, @${username}, Elo ${elo}`;
+  const content = (
+    <>
       {/* Decorative: the name next to it already says who this is. */}
       <View style={styles.avatar} accessibilityElementsHidden importantForAccessibility="no">
         <Text style={styles.initials}>{getInitials(realName)}</Text>
@@ -41,6 +38,25 @@ export function PlayerRow({realName, username, elo, onPress}: PlayerRowProps) {
       </View>
 
       <Text style={styles.elo}>{elo}</Text>
+    </>
+  );
+
+  if (!onPress) {
+    return (
+      // Read as one item, not four separate pieces of text.
+      <View style={styles.row} accessible accessibilityLabel={label}>
+        {content}
+      </View>
+    );
+  }
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityHint="Opens their profile"
+      onPress={onPress}
+      style={({pressed}) => [styles.row, pressed && styles.pressed]}>
+      {content}
     </Pressable>
   );
 }
