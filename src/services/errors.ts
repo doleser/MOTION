@@ -29,7 +29,11 @@ export type ServiceErrorCode =
   | 'not_accepting_challenges'
   | 'challenge_pending'
   | 'challenge_cooldown'
-  | 'challenger_busy';
+  | 'challenger_busy'
+  | 'challenge_not_found'
+  | 'challenge_expired'
+  | 'challenge_already_answered'
+  | 'match_ended';
 
 export class ServiceError extends Error {
   readonly code: ServiceErrorCode;

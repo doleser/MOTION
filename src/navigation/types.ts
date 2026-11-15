@@ -78,8 +78,10 @@ export type SearchStackParamList = {
   CreateChallenge: {opponentId: string};
   /** Received, sent, and upcoming challenges. */
   ChallengesInbox: undefined;
-  /** One challenge: Accept/Decline if received, Cancel if sent. */
+  /** One challenge, as a sheet over the inbox: Accept/Decline, Cancel, or Check In. */
   ChallengeDetails: {challengeId: number};
+  /** Check in at the court for a confirmed 1v1 match. */
+  MatchCheckIn: {challengeId: number};
 };
 
 // ---------- Screen prop helpers ----------

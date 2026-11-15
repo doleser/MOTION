@@ -1,25 +1,97 @@
-import {MotionButton} from '../../components/MotionButton';
-import type {SearchScreenProps} from '../../navigation/types';
-import {PlaceholderLayout} from './PlaceholderLayout';
-import {FAKE_CHALLENGES} from './fakeChallenges';
+import {useFocusEffect, useIsFocused} from '@react-navigation/native';
+import {StatusBar} from 'expo-status-bar';
+import {useCallback, useEffect, useState} from 'react';
 
-/** PLACEHOLDER: received, sent, and upcoming challenges. */
+import type {SearchScreenProps} from '../../navigation/types';
+import {sortIntoSections} from '../../services/challengeStatus';
+import {listMyChallenges, type Challenge} from '../../services/challenges';
+import {getErrorMessage} from '../../services/errors';
+import {ChallengesInboxScreenView, type InboxState} from './ChallengesInboxScreenView';
+
+/**
+ * How often the sections are re-sorted while the inbox is open, so a
+ * challenge that expires or a match that ends moves on its own.
+ */
+const CLOCK_TICK_MS = 30 * 1000;
+
+/** The last successful load, or why it failed. */
+type Loaded = {ok: true; challenges: Challenge[]} | {ok: false; message: string};
+
+/**
+ * The challenges inbox: received, upcoming, sent, and recent challenges.
+ * ChallengesInboxScreenView draws the screen.
+ */
 export function ChallengesInboxScreen({navigation}: SearchScreenProps<'ChallengesInbox'>) {
+  const isFocused = useIsFocused();
+  const [loaded, setLoaded] = useState<Loaded | null>(null);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [now, setNow] = useState(() => new Date());
+
+  // Loads the list. Returns a cleanup that drops the answer if it arrives
+  // after the screen has moved on.
+  const load = useCallback(() => {
+    let isCurrent = true;
+    listMyChallenges()
+      .then(
+        (challenges) => {
+          if (!isCurrent) return;
+          setLoaded({ok: true, challenges});
+          setNow(new Date());
+        },
+        (e: unknown) => {
+          if (!isCurrent) return;
+          // A failed reload keeps the list that's already showing.
+          setLoaded((current) => (current?.ok ? current : {ok: false, message: getErrorMessage(e)}));
+        },
+      )
+      .finally(() => {
+        if (isCurrent) setIsRefreshing(false);
+      });
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
+
+  // Load every time the inbox comes into view, including when the
+  // challenge pop-up closes, so a status changed there shows here too.
+  useFocusEffect(load);
+
+  // Keep the clock moving while the inbox is showing.
+  useEffect(() => {
+    if (!isFocused) return;
+    const timer = setInterval(() => setNow(new Date()), CLOCK_TICK_MS);
+    return () => clearInterval(timer);
+  }, [isFocused]);
+
+  function refresh() {
+    setIsRefreshing(true);
+    load();
+  }
+
+  function retry() {
+    setLoaded(null); // Back to the spinner.
+    load();
+  }
+
+  const state: InboxState =
+    loaded === null
+      ? {kind: 'loading'}
+      : loaded.ok
+        ? {kind: 'loaded', sections: sortIntoSections(loaded.challenges, now), now}
+        : {kind: 'error', message: loaded.message};
+
   return (
-    <PlaceholderLayout
-      title="CHALLENGES"
-      onBack={() => navigation.goBack()}
-      note="Received, sent, and upcoming challenges will show here.">
-      {FAKE_CHALLENGES.map((challenge) => (
-        <MotionButton
-          key={challenge.challengeId}
-          label={`${challenge.label} (fake)`}
-          variant="secondary"
-          onPress={() =>
-            navigation.navigate('ChallengeDetails', {challengeId: challenge.challengeId})
-          }
-        />
-      ))}
-    </PlaceholderLayout>
+    <>
+      {/* White clock and battery on the dark screen. */}
+      {isFocused ? <StatusBar style="light" /> : null}
+      <ChallengesInboxScreenView
+        state={state}
+        isRefreshing={isRefreshing}
+        onRefresh={refresh}
+        onRetry={retry}
+        onBack={() => navigation.goBack()}
+        onOpenChallenge={(challengeId) => navigation.navigate('ChallengeDetails', {challengeId})}
+      />
+    </>
   );
 }

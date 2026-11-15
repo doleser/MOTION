@@ -2,6 +2,7 @@ import {createNativeStackNavigator} from '@react-navigation/native-stack';
 
 import {ChallengeDetailsScreen} from '../screens/search/ChallengeDetailsScreen';
 import {ChallengesInboxScreen} from '../screens/search/ChallengesInboxScreen';
+import {MatchCheckInScreen} from '../screens/search/MatchCheckInScreen';
 import {CreateChallengeScreen} from '../screens/search/CreateChallengeScreen';
 import {PlayerProfileScreen} from '../screens/search/PlayerProfileScreen';
 import {SearchScreen} from '../screens/search/SearchScreen';
@@ -33,7 +34,18 @@ export function SearchStack() {
         }}
       />
       <Stack.Screen name="ChallengesInbox" component={ChallengesInboxScreen} />
-      <Stack.Screen name="ChallengeDetails" component={ChallengeDetailsScreen} />
+      {/* A sheet over the inbox, like the challenge sheet. */}
+      <Stack.Screen
+        name="ChallengeDetails"
+        component={ChallengeDetailsScreen}
+        options={{
+          presentation: 'formSheet',
+          sheetAllowedDetents: 'fitToContents',
+          sheetGrabberVisible: true,
+          contentStyle: {backgroundColor: colors.bg},
+        }}
+      />
+      <Stack.Screen name="MatchCheckIn" component={MatchCheckInScreen} />
     </Stack.Navigator>
   );
 }
