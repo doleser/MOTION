@@ -1,5 +1,5 @@
 <svg preserveAspectRatio="none" overflow="visible" style="display: block;" width="22" height="22" viewBox="0 0 22 22" fill="none" xmlns="http://www.w3.org/2000/svg">
 <g id="Icon">
-<path id="Editable play" d="M6.91667 3.125L19.1667 11L6.91667 18.875V3.125Z" fill="#0D0D0D" stroke-width="1.575" stroke="#0D0D0D"/>
+<path id="Editable search" d="M15.5 9.5A6 6 0 1 1 3.5 9.5A6 6 0 1 1 15.5 9.5ZM13.75 13.75L19.5 19.5" stroke-width="1.65" stroke="#B0B0AD"/>
 </g>
 </svg>

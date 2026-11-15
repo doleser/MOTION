@@ -50,7 +50,8 @@ export type AuthStackParamList = {
 export type MainTabParamList = {
   /** The Map tab is a stack, so Court Details opens with the tab bar still showing. */
   Map: NavigatorScreenParams<MapStackParamList> | undefined;
-  Play: undefined;
+  /** Also a stack: player search and 1v1 challenges. */
+  Search: NavigatorScreenParams<SearchStackParamList> | undefined;
   Profile: undefined;
 };
 
@@ -58,6 +59,27 @@ export type MainTabParamList = {
 export type MapStackParamList = {
   MapHome: undefined;
   CourtDetails: {courtId: number};
+};
+
+/**
+ * Screens inside the Search tab. User IDs are Supabase UUIDs (strings);
+ * challenge IDs are numbers, like the other tables' IDs.
+ */
+export type SearchStackParamList = {
+  /** Player search, with the challenges inbox icon in the top corner. */
+  SearchHome: undefined;
+  /**
+   * Another player's profile, opened from a search result. The challenge
+   * sheet sets `challengeSentAt` (a timestamp) when it closes after sending,
+   * which shows the "Challenge sent" message.
+   */
+  PlayerProfile: {userId: string; challengeSentAt?: number};
+  /** The challenge form for a 1v1 against `opponentId`, as a sheet over the profile. */
+  CreateChallenge: {opponentId: string};
+  /** Received, sent, and upcoming challenges. */
+  ChallengesInbox: undefined;
+  /** One challenge: Accept/Decline if received, Cancel if sent. */
+  ChallengeDetails: {challengeId: number};
 };
 
 // ---------- Screen prop helpers ----------
@@ -88,6 +110,13 @@ export type MapScreenProps<T extends keyof MapStackParamList> =
   CompositeScreenProps<
     NativeStackScreenProps<MapStackParamList, T>,
     MainTabScreenProps<'Map'>
+  >;
+
+/** Same as MapScreenProps, for the Search tab's stack. */
+export type SearchScreenProps<T extends keyof SearchStackParamList> =
+  CompositeScreenProps<
+    NativeStackScreenProps<SearchStackParamList, T>,
+    MainTabScreenProps<'Search'>
   >;
 
 // Tells React Navigation our root param list, so the `useNavigation()` hook

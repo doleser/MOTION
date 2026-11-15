@@ -7,19 +7,23 @@ import type {MainTabParamList} from './types';
 
 import MapActiveIcon from '../../assets/icons/tab-map-active.svg';
 import MapInactiveIcon from '../../assets/icons/tab-map-inactive.svg';
-import PlayIcon from '../../assets/icons/tab-play.svg';
 import ProfileActiveIcon from '../../assets/icons/tab-profile-active.svg';
 import ProfileInactiveIcon from '../../assets/icons/tab-profile-inactive.svg';
+// Not from Figma yet: drawn to match the Map and Profile icons.
+import SearchActiveIcon from '../../assets/icons/tab-search-active.svg';
+import SearchInactiveIcon from '../../assets/icons/tab-search-inactive.svg';
 
-// Icons downloaded from Figma ("MVP / Navigation"). Each SVG sets its own 22 x 22 size.
+// Map and Profile icons are from Figma ("MVP / Navigation"). Each SVG sets its
+// own 22 x 22 size. `satisfies` makes adding a tab without an icon a type error.
 const ICONS = {
   Map: {active: MapActiveIcon, inactive: MapInactiveIcon},
+  Search: {active: SearchActiveIcon, inactive: SearchInactiveIcon},
   Profile: {active: ProfileActiveIcon, inactive: ProfileInactiveIcon},
-};
+} satisfies Record<keyof MainTabParamList, object>;
 
 /**
- * Bottom tab bar: Map, Play (a yellow tile), Profile.
- * Figma: "MVP / Navigation" (Active=Map / Play / Profile).
+ * Bottom tab bar: Map, Search, Profile.
+ * Figma: "MVP / Navigation" (Active=Map / Profile). Search replaced the Play tab.
  */
 export function MotionTabBar({state, navigation}: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
@@ -43,8 +47,7 @@ export function MotionTabBar({state, navigation}: BottomTabBarProps) {
           }
         }
 
-        const isPlay = name === 'Play';
-        const Icon = isPlay ? PlayIcon : ICONS[name][isActive ? 'active' : 'inactive'];
+        const Icon = ICONS[name][isActive ? 'active' : 'inactive'];
         return (
           <Pressable
             key={route.key}
@@ -52,23 +55,9 @@ export function MotionTabBar({state, navigation}: BottomTabBarProps) {
             accessibilityState={{selected: isActive}}
             accessibilityLabel={name}
             onPress={onPress}
-            style={({pressed}) => [
-              styles.tab,
-              isPlay && styles.playTab,
-              pressed && styles.pressed,
-            ]}>
-            {isPlay ? (
-              <View style={styles.playTile}>
-                <Icon />
-              </View>
-            ) : (
-              <Icon />
-            )}
-            <Text
-              style={[
-                styles.label,
-                {color: isActive ? colors.yellow : isPlay ? colors.text : colors.muted},
-              ]}>
+            style={({pressed}) => [styles.tab, pressed && styles.pressed]}>
+            <Icon />
+            <Text style={[styles.label, {color: isActive ? colors.yellow : colors.muted}]}>
               {name}
             </Text>
             {isActive ? <View style={styles.indicator} /> : null}
@@ -90,18 +79,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: spacing.sm,
     gap: spacing.xs,
-  },
-  // Figma: the Play tab has less padding and a smaller gap, to fit the tile.
-  playTab: {
-    paddingVertical: spacing.xs,
-    gap: 2,
-  },
-  playTile: {
-    width: 44,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: colors.yellow,
   },
   pressed: {
     opacity: opacity.pressed,

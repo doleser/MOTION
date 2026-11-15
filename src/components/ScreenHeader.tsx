@@ -1,3 +1,4 @@
+import type {ReactNode} from 'react';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
 
 import {colors, opacity, sizes, spacing, typography} from '../theme';
@@ -13,10 +14,12 @@ interface ScreenHeaderProps {
    * created); the title stays in the same place.
    */
   onBack?: () => void;
+  /** Optional item at the right end, e.g. the challenges inbox icon. */
+  right?: ReactNode;
 }
 
 /** Top bar with a back arrow and a title. Figma: "MVP / Header". */
-export function ScreenHeader({title, onBack}: ScreenHeaderProps) {
+export function ScreenHeader({title, onBack, right}: ScreenHeaderProps) {
   return (
     <View style={styles.header}>
       {onBack ? (
@@ -35,6 +38,7 @@ export function ScreenHeader({title, onBack}: ScreenHeaderProps) {
       <Text style={styles.title} numberOfLines={1}>
         {title}
       </Text>
+      {right}
     </View>
   );
 }
