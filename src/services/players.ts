@@ -1,16 +1,17 @@
 /**
  * Players service: finding other players and reading their profiles.
  *
- * Still STUBS with fake data until the backend has what they need; screens
- * won't change when they switch over:
- *   - searchPlayers → a search_players(p_query) database function (Owen)
+ * searchPlayers calls search_players. Profile and inbox-count reads are
+ * still stubs with fake data until those backends exist; screens won't
+ * change when they switch over:
+ *   - searchPlayers → search_players(p_query)
  *   - getPlayerProfile → a player_profile(p_user_id) database function, plus
  *     the real getPlayerRecord (records.ts) for the record
  *   - getPendingChallengeCount → the challenges backend (not built yet)
  */
-import {ServiceError} from './errors';
+import {fromPlayerSearchError, ServiceError} from './errors';
 import type {GameResult, PlayerRecord} from './records';
-import {parseSearchQuery, usernameMatches} from './searchQuery';
+import {parseSearchQuery} from './searchQuery';
 import {supabase} from './supabase';
 
 /** One player in the search results. */
@@ -40,12 +41,6 @@ export const MAX_SEARCH_RESULTS = 20;
 
 /** How long the fake server takes to answer. */
 const FAKE_DELAY_MS = 500;
-
-/**
- * TEMPORARY: a query starting with this fails, so the error state can be
- * tested on a phone. Delete with the fake data.
- */
-const FAKE_ERROR_PREFIX = 'err';
 
 interface FakePlayer extends PlayerSearchResult {
   /** False = started sign-up but never finished (no onboarded_at). */
@@ -98,18 +93,20 @@ function wait(ms: number): Promise<void> {
 
 // ---------- Public API ----------
 
+interface PlayerSearchRow {
+  user_id: string;
+  real_name: string;
+  username: string;
+  elo: number;
+}
+
 /**
  * Players whose username starts with `query` (ignoring capitalization), up
  * to MAX_SEARCH_RESULTS, sorted by username. A query that can't match (see
  * parseSearchQuery) returns [] without asking the server.
  *
- * Never includes the signed-in user or players who haven't finished
- * sign-up.
- *
- * STUB: searches FAKE_PLAYERS. The real one will call a search_players(p_query)
- * database function, which must also hide blocked players in BOTH
- * directions on the server: the app isn't allowed to know who blocked the
- * signed-in user, so it can't filter them out itself.
+ * The database leaves out the signed-in user, players who haven't finished
+ * sign-up, and players blocked in either direction.
  */
 export async function searchPlayers(query: string): Promise<PlayerSearchResult[]> {
   const parsed = parseSearchQuery(query);
@@ -117,26 +114,16 @@ export async function searchPlayers(query: string): Promise<PlayerSearchResult[]
     return [];
   }
 
-  const {data: {session}} = await supabase.auth.getSession();
-  if (!session) {
-    throw new ServiceError('not_signed_in', 'You need to be signed in.');
+  const {data, error} = await supabase.rpc('search_players', {p_query: parsed.query});
+  if (error) {
+    throw fromPlayerSearchError(error);
   }
-  const myUserId = session.user.id;
-
-  await wait(FAKE_DELAY_MS);
-  if (parsed.query.startsWith(FAKE_ERROR_PREFIX)) {
-    throw new Error('Fake search failure');
-  }
-
-  return FAKE_PLAYERS.filter(
-    (player) =>
-      player.finishedSignUp &&
-      player.userId !== myUserId &&
-      usernameMatches(player.username, parsed.query),
-  )
-    .sort((a, b) => a.username.localeCompare(b.username))
-    .slice(0, MAX_SEARCH_RESULTS)
-    .map(({userId, realName, username, elo}) => ({userId, realName, username, elo}));
+  return ((data ?? []) as PlayerSearchRow[]).map((row) => ({
+    userId: row.user_id,
+    realName: row.real_name,
+    username: row.username,
+    elo: row.elo,
+  }));
 }
 
 /**
