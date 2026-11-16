@@ -30,14 +30,6 @@ import {checkStartTime, isAllowedMatchLength, matchesOverlap, MAX_DAYS_AHEAD} fr
 import {listCourts, type Court} from './courts';
 import {ServiceError, type ServiceErrorCode} from './errors';
 import {getFakePlayer} from './fakePlayers';
-  checkStartTime,
-  isAllowedMatchLength,
-  matchesOverlap,
-  MAX_DAYS_AHEAD,
-  type MatchWindow,
-} from './challengeTime';
-import {ServiceError, type ServiceErrorCode} from './errors';
-import {getFakePlayer} from './players';
 import {supabase} from './supabase';
 
 /**
