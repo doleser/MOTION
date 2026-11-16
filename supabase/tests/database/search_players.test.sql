@@ -61,10 +61,10 @@ set local role authenticated;
 select set_config('request.jwt.claims',
   '{"sub": "11111111-1111-1111-1111-111111111111", "role": "authenticated"}', true);
 
+-- bigjohn is in the fixture and does not start with j, so it is not here.
 select results_eq(
   $$ select user_id, real_name, username, elo from public.search_players('j') $$,
   $$ values
-       ('88888888-8888-8888-8888-888888888888'::uuid, 'Big John'::text, 'bigjohn'::text, 1300),
        ('33333333-3333-3333-3333-333333333333'::uuid, 'Jordan Bell'::text, 'jo_bell'::text, 1175),
        ('22222222-2222-2222-2222-222222222222'::uuid, 'Johanna Lee'::text, 'johanna'::text, 1462),
        ('44444444-4444-4444-4444-444444444444'::uuid, 'Johnny Nguyen'::text, 'johnny_n'::text, 1420),
@@ -202,7 +202,7 @@ select set_config('request.jwt.claims', '', true);
 select throws_ok(
   $$ select * from public.search_players('j') $$,
   '42501',
-  'permission denied',
+  'permission denied for function search_players',
   'anon cannot call search_players'
 );
 
