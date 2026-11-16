@@ -1,3 +1,4 @@
+import type {ReactNode} from 'react';
 import {Pressable, StyleSheet, Text, View} from 'react-native';
 
 import {colors, opacity, sizes, spacing, typography} from '../theme';
@@ -13,10 +14,23 @@ interface ScreenHeaderProps {
    * created); the title stays in the same place.
    */
   onBack?: () => void;
+  /** Optional item at the right end, e.g. the challenges inbox icon. */
+  right?: ReactNode;
+  /**
+   * With no back arrow, keep its empty space so the title doesn't move
+   * (default). Pass false on a tab's first screen, where Figma puts the
+   * title at the left edge (e.g. SEARCH / Players).
+   */
+  reserveBackSpace?: boolean;
 }
 
 /** Top bar with a back arrow and a title. Figma: "MVP / Header". */
-export function ScreenHeader({title, onBack}: ScreenHeaderProps) {
+export function ScreenHeader({
+  title,
+  onBack,
+  right,
+  reserveBackSpace = true,
+}: ScreenHeaderProps) {
   return (
     <View style={styles.header}>
       {onBack ? (
@@ -28,13 +42,14 @@ export function ScreenHeader({title, onBack}: ScreenHeaderProps) {
           {/* The SVG file sets its own 24 x 24 size. */}
           <BackIcon />
         </Pressable>
-      ) : (
+      ) : reserveBackSpace ? (
         // Empty space the size of the arrow, so the title doesn't move.
         <View style={styles.back} />
-      )}
+      ) : null}
       <Text style={styles.title} numberOfLines={1}>
         {title}
       </Text>
+      {right}
     </View>
   );
 }

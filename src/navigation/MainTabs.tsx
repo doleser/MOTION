@@ -1,9 +1,9 @@
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 
-import {PlayScreen} from '../screens/main/PlayScreen';
 import {ProfileScreen} from '../screens/main/ProfileScreen';
 import {MapStack} from './MapStack';
 import {MotionTabBar} from './MotionTabBar';
+import {SearchStack} from './SearchStack';
 import type {MainTabParamList} from './types';
 
 const Tab = createBottomTabNavigator<MainTabParamList>();
@@ -12,10 +12,10 @@ const Tab = createBottomTabNavigator<MainTabParamList>();
 export function MainTabs() {
   return (
     <Tab.Navigator tabBar={(props) => <MotionTabBar {...props} />}>
-      {/* The Map stack draws its own top area (Figma design). */}
+      {/* The Map and Search stacks draw their own top areas. */}
       <Tab.Screen name="Map" component={MapStack} options={{headerShown: false}} />
-      {/* TODO: hide these headers once Play and Profile get their Figma designs. */}
-      <Tab.Screen name="Play" component={PlayScreen} />
+      <Tab.Screen name="Search" component={SearchStack} options={{headerShown: false}} />
+      {/* TODO: hide this header once Profile gets its Figma design. */}
       <Tab.Screen name="Profile" component={ProfileScreen} />
     </Tab.Navigator>
   );

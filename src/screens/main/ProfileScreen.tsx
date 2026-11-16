@@ -9,7 +9,7 @@ import {signOut} from '../../services/auth';
 import {getErrorMessage} from '../../services/errors';
 import {getPlayerRecord, type PlayerRecord} from '../../services/records';
 import {ProfileScreenView} from './ProfileScreenView';
-import {formatWinRate} from './winRate';
+import {formatStreak, formatWinRate} from './winRate';
 
 /** Shown in every stat box until the record has loaded. */
 const NOT_LOADED = '—';
@@ -101,9 +101,4 @@ export function ProfileScreen({navigation}: MainTabScreenProps<'Profile'>) {
       />
     </>
   );
-}
-
-/** "W3", or "—" with no games yet. */
-function formatStreak(streak: PlayerRecord['streak']): string {
-  return streak && streak.count > 0 ? `${streak.result}${streak.count}` : '—';
 }

@@ -1,4 +1,4 @@
-import {formatWinRate, getWinRate} from './winRate';
+import {formatStreak, formatWinRate, getWinRate} from './winRate';
 
 describe('getWinRate', () => {
   it('works out a normal record', () => {
@@ -37,5 +37,23 @@ describe('formatWinRate', () => {
 
   it('shows a dash with no games', () => {
     expect(formatWinRate({wins: 0, losses: 0})).toBe('—');
+  });
+});
+
+describe('formatStreak', () => {
+  it('shows a winning streak as W and the count', () => {
+    expect(formatStreak({result: 'W', count: 3})).toBe('W3');
+  });
+
+  it('shows a losing streak as L and the count', () => {
+    expect(formatStreak({result: 'L', count: 2})).toBe('L2');
+  });
+
+  it('is a dash with no games yet', () => {
+    expect(formatStreak(null)).toBe('—');
+  });
+
+  it('is a dash for a zero-length streak', () => {
+    expect(formatStreak({result: 'W', count: 0})).toBe('—');
   });
 });

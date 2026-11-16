@@ -3,6 +3,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {MotionButton} from '../../components/MotionButton';
 import {PlayerIdentity} from '../../components/PlayerIdentity';
+import {ProfileElo} from '../../components/ProfileElo';
 import {type GameResult, RecentForm} from '../../components/RecentForm';
 import {ScreenHeader} from '../../components/ScreenHeader';
 import {type Stat, StatPanel} from '../../components/StatPanel';
@@ -38,22 +39,15 @@ export function ProfileScreenView({
   return (
     // Bottom edge left out: the tab bar already sits above the home bar.
     <SafeAreaView style={styles.screen} edges={['top']}>
-      {/* A tab, so there's nothing to go back to: no back arrow. */}
-      <ScreenHeader title="YOUR PROFILE" />
+      {/* A tab, so there's nothing to go back to: no back arrow, and the
+          title starts at the left edge (same as Player Search). */}
+      <ScreenHeader title="YOUR PROFILE" reserveBackSpace={false} />
       <View style={styles.divider} />
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <PlayerIdentity realName={realName} username={username} />
 
-        <View style={styles.elo}>
-          <Text style={styles.eloLabel}>1V1 ELO · PROVISIONAL</Text>
-          <Text
-            // The number alone would be read as just "800".
-            accessibilityLabel={`Elo ${elo}, provisional`}
-            style={styles.eloValue}>
-            {elo}
-          </Text>
-        </View>
+        <ProfileElo elo={elo} provisional />
 
         <StatPanel stats={stats} />
 
@@ -100,17 +94,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screen,
     paddingBottom: spacing.screen,
     gap: spacing.xl,
-  },
-  elo: {
-    gap: spacing.xs,
-  },
-  eloLabel: {
-    ...typography.label,
-    color: colors.muted,
-  },
-  eloValue: {
-    ...typography.elo,
-    color: colors.yellow,
   },
   actions: {
     gap: spacing.md,
