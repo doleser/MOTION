@@ -11,6 +11,17 @@ import {ServiceError} from './errors';
 import {FAKE_PLAYERS, getFakePlayer} from './fakePlayers';
 import type {PlayerRecord} from './records';
 import {parseSearchQuery, usernameMatches} from './searchQuery';
+ * searchPlayers calls search_players. Profile and inbox-count reads are
+ * still stubs with fake data until those backends exist; screens won't
+ * change when they switch over:
+ *   - searchPlayers → search_players(p_query)
+ *   - getPlayerProfile → a player_profile(p_user_id) database function, plus
+ *     the real getPlayerRecord (records.ts) for the record
+ *   - getPendingChallengeCount → the challenges backend (not built yet)
+ */
+import {fromPlayerSearchError, ServiceError} from './errors';
+import type {GameResult, PlayerRecord} from './records';
+import {parseSearchQuery} from './searchQuery';
 import {supabase} from './supabase';
 
 /** One player in the search results. */

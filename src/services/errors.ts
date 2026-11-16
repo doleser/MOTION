@@ -123,6 +123,17 @@ export function fromCompleteProfileError(
 }
 
 /**
+ * Turns a search_players error into a ServiceError. Anything else is
+ * returned as is, so getErrorMessage shows the generic message.
+ */
+export function fromPlayerSearchError(error: PostgrestError): Error {
+  if (error.code === '42501' && error.message === 'Not signed in.') {
+    return new ServiceError('not_signed_in', 'Not signed in.');
+  }
+  return error;
+}
+
+/**
  * Turns a check_in or check_out error into a ServiceError the court screen
  * can show. Anything else (including "Court and location are required.") is
  * returned as is, so getErrorMessage shows the generic message.

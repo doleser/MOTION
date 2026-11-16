@@ -8,6 +8,7 @@ import {PlayerProfileScreen} from '../screens/search/PlayerProfileScreen';
 import {SearchScreen} from '../screens/search/SearchScreen';
 import {colors} from '../theme';
 import type {SearchStackParamList} from './types';
+ 
 
 const Stack = createNativeStackNavigator<SearchStackParamList>();
 

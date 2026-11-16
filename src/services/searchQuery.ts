@@ -12,6 +12,22 @@
 const MAX_USERNAME_LENGTH = 16;
 
 /** Characters a username can have. Same set as USERNAME_PATTERN in profile.ts. */
+ * search_players checks this same alphabet and 16-character cap. The
+ * 3-character username minimum (username_format / USERNAME_PATTERN) does
+ * not apply here: a one-character prefix is a valid search.
+ */
+
+/**
+ * Same 16-character cap as username_format. The 3-character username
+ * minimum does not apply to search, so a longer query can't match and a
+ * one-character query can.
+ */
+const MAX_USERNAME_LENGTH = 16;
+
+/**
+ * Same characters as username_format (A-Z, 0-9, _). The 3-character
+ * username minimum does not apply to search.
+ */
 const USERNAME_CHARACTERS = /^[A-Za-z0-9_]+$/;
 
 /** What the user typed, sorted into what the screen should do with it. */
