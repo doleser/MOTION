@@ -58,11 +58,13 @@ export function MapScreen({navigation}: MapScreenProps<'MapHome'>) {
   const [activeOnly, setActiveOnly] = useState(false);
   /** The court whose card is open, if any. */
   const [selectedId, setSelectedId] = useState<number | null>(null);
-  const {courts, isLoading, error, loadAround, onRegionChangeComplete, refresh, updateCount} =
+  const {courts, isLoading, error, loadAround, onRegionChangeComplete, refresh, resync, updateCount} =
     useNearbyCourts();
 
   // Live counts for the courts on screen, only while the map is showing.
-  useCourtCounts(isFocused ? courts.map((court) => court.id) : [], updateCount);
+  // Coming back to the map (e.g. from Court Details) re-subscribes, and
+  // `resync` then catches up on changes made while it wasn't listening.
+  useCourtCounts(isFocused ? courts.map((court) => court.id) : [], updateCount, resync);
 
   // Open on the user's position, or on UW without location access.
   useEffect(() => {
