@@ -59,6 +59,8 @@ export type MainTabParamList = {
 export type MapStackParamList = {
   MapHome: undefined;
   CourtDetails: {courtId: number};
+  /** Opens after a verified check-in at courtId. Placeholder for now. */
+  CheckedInCourt: {courtId: number};
 };
 
 /**

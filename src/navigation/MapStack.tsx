@@ -1,5 +1,6 @@
 import {createNativeStackNavigator} from '@react-navigation/native-stack';
 
+import {CheckedInCourtScreen} from '../screens/main/CheckedInCourtScreen';
 import {CourtDetailsScreen} from '../screens/main/CourtDetailsScreen';
 import {MapScreen} from '../screens/main/MapScreen';
 import type {MapStackParamList} from './types';
@@ -16,6 +17,7 @@ export function MapStack() {
     <Stack.Navigator screenOptions={{headerShown: false}}>
       <Stack.Screen name="MapHome" component={MapScreen} />
       <Stack.Screen name="CourtDetails" component={CourtDetailsScreen} />
+      <Stack.Screen name="CheckedInCourt" component={CheckedInCourtScreen} />
     </Stack.Navigator>
   );
 }
