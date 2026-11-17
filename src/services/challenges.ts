@@ -18,7 +18,9 @@
  * The status rules (expired, ended, hidden, sections) are in
  * challengeStatus.ts; the time rules are in challengeTime.ts.
  *
- * The fake state lives in memory, so it resets when the app reloads.
+ * The fake state lives in memory, so it resets when the app reloads. The
+ * seeded challenges are with the fake players in fakePlayers.ts; real players
+ * from search can be challenged too (their profile is read for real).
  */
 import {
   getDisplayStatus,
@@ -30,6 +32,7 @@ import {checkStartTime, isAllowedMatchLength, matchesOverlap, MAX_DAYS_AHEAD} fr
 import {listCourts, type Court} from './courts';
 import {ServiceError, type ServiceErrorCode} from './errors';
 import {getFakePlayer} from './fakePlayers';
+import {getPlayerProfile} from './players';
 import {supabase} from './supabase';
 
 /**
@@ -113,6 +116,21 @@ interface StoredChallenge {
   durationMinutes: number;
   closedAt: Date | null;
 }
+
+/** The other player in a challenge, as the stubs need them. */
+interface Opponent {
+  userId: string;
+  realName: string;
+  username: string;
+  elo: number;
+  openToChallenges: boolean;
+}
+
+/**
+ * Real players the user has challenged, so the inbox can show their names.
+ * The fake players are looked up in fakePlayers.ts instead.
+ */
+const realOpponents = new Map<string, Opponent>();
 
 /** All of the user's challenges. Filled on first use (it needs real courts). */
 let fakeChallenges: StoredChallenge[] | null = null;
@@ -240,7 +258,7 @@ async function loadFakeState(): Promise<{stored: StoredChallenge[]; courts: Cour
 
 /** A stored challenge with its opponent and court filled in. */
 function toChallenge(stored: StoredChallenge, courts: Court[]): Challenge {
-  const player = getFakePlayer(stored.opponentId);
+  const player = getFakePlayer(stored.opponentId) ?? realOpponents.get(stored.opponentId);
   return {
     id: stored.id,
     direction: stored.direction,
@@ -271,13 +289,18 @@ function isUserBusy(
   );
 }
 
+/**
+ * A fake player, or a real one read from the database. Throws
+ * 'player_not_found' if neither.
+ */
+async function getOpponent(opponentId: string): Promise<Opponent> {
+  return getFakePlayer(opponentId) ?? getPlayerProfile(opponentId);
+}
+
 /** The status from the fake state (same rules the backend will use). */
-function fakeOpponentStatus(stored: StoredChallenge[], opponentId: string): ChallengeStatus {
-  const player = getFakePlayer(opponentId);
-  if (!player) {
-    fail('player_not_found');
-  }
-  if (!player.openToChallenges) {
+function fakeOpponentStatus(stored: StoredChallenge[], opponent: Opponent): ChallengeStatus {
+  const opponentId = opponent.userId;
+  if (!opponent.openToChallenges) {
     return 'not_accepting';
   }
   const now = new Date();
@@ -328,8 +351,8 @@ function requirePending(challenge: StoredChallenge, now: Date): void {
  * challenge_status(p_opponent_id).
  */
 export async function getChallengeStatus(opponentId: string): Promise<ChallengeStatus> {
-  const {stored} = await loadFakeState();
-  return fakeOpponentStatus(stored, opponentId);
+  const [{stored}, opponent] = await Promise.all([loadFakeState(), getOpponent(opponentId)]);
+  return fakeOpponentStatus(stored, opponent);
 }
 
 /**
@@ -361,7 +384,7 @@ export async function previewElo(opponentId: string): Promise<EloStakes> {
  * the above on the server.
  */
 export async function createChallenge(challenge: NewChallenge): Promise<number> {
-  const {stored} = await loadFakeState();
+  const [{stored}, opponent] = await Promise.all([loadFakeState(), getOpponent(challenge.opponentId)]);
   const now = new Date();
 
   if (!isAllowedMatchLength(challenge.durationMinutes)) {
@@ -375,7 +398,7 @@ export async function createChallenge(challenge: NewChallenge): Promise<number> 
     fail('challenge_too_far_ahead');
   }
 
-  const status = fakeOpponentStatus(stored, challenge.opponentId);
+  const status = fakeOpponentStatus(stored, opponent);
   if (status === 'not_accepting') {
     fail('not_accepting_challenges');
   }
@@ -395,6 +418,9 @@ export async function createChallenge(challenge: NewChallenge): Promise<number> 
     fail('challenger_busy');
   }
 
+  if (!getFakePlayer(opponent.userId)) {
+    realOpponents.set(opponent.userId, opponent);
+  }
   const id = nextFakeChallengeId++;
   stored.push({
     id,

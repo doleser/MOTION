@@ -4,12 +4,9 @@ import {useCallback, useEffect, useState} from 'react';
 import {Keyboard} from 'react-native';
 
 import type {SearchScreenProps} from '../../navigation/types';
+import {getPendingChallengeCount} from '../../services/challenges';
 import {getErrorMessage} from '../../services/errors';
-import {
-  getPendingChallengeCount,
-  searchPlayers,
-  type PlayerSearchResult,
-} from '../../services/players';
+import {searchPlayers, type PlayerSearchResult} from '../../services/players';
 import {parseSearchQuery} from '../../services/searchQuery';
 import {SearchScreenView, type SearchStatus} from './SearchScreenView';
 
