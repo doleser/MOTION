@@ -33,11 +33,14 @@ type Loaded = {ok: true; challenge: Challenge; court: CheckInCourt} | {ok: false
  *   - Check In runs the same check-in flow and sheets as Court Details
  *     (useCheckInFlow / CheckInSheets), at the match's court.
  *   - "YOU · CHECKED IN" is real: the user's open visit is at this court.
- *   - The opponent's readiness follows the app's privacy rule: a player
- *     only sees who's checked in at a court once they're checked in there
- *     too. So once the user is checked in, get_court_players shows whether
- *     the opponent is there (see useOpponentAtCourt); before that it's
- *     "CHECK IN TO SEE". This is the intended design, not a stand-in.
+ *   - The opponent's readiness: once the user is checked in at the court,
+ *     get_court_players shows whether the opponent is there (see
+ *     useOpponentAtCourt); before that it's "CHECK IN TO SEE".
+ *     TEMPORARY: the agreed rule is "at a court, you see KOTC players and
+ *     your own confirmed 1v1 opponent; everyone else only counts". Once
+ *     the backend has match_readiness(p_challenge_id) and get_court_players
+ *     returns only KOTC players, switch the opponent check to
+ *     match_readiness.
  *   - Start Match does nothing yet (no challenges backend).
  */
 export function MatchCheckInScreen({navigation, route}: SearchScreenProps<'MatchCheckIn'>) {
