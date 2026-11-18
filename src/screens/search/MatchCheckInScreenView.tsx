@@ -26,6 +26,21 @@ export interface MatchDetails {
  */
 export type MatchTiming = 'later' | 'now' | 'ended';
 
+/**
+ * Whether the opponent is checked in at the match's court:
+ *   - 'unknown': the app can't tell yet (it only can once the user is
+ *     checked in there too)
+ *   - 'not_ready' / 'ready'
+ */
+export type OpponentStatus = 'unknown' | 'not_ready' | 'ready';
+
+/** The opponent's status line. */
+const OPPONENT_STATUS_TEXT: Record<OpponentStatus, string> = {
+  unknown: 'CHECK IN TO SEE',
+  not_ready: 'NOT READY',
+  ready: 'READY',
+};
+
 /** What the screen is showing. */
 export type MatchCheckInState =
   | {kind: 'loading'}
@@ -36,8 +51,7 @@ export type MatchCheckInState =
       timing: MatchTiming;
       /** The signed-in user is checked in at the match's court. */
       youCheckedIn: boolean;
-      /** The opponent is checked in at the match's court. */
-      opponentReady: boolean;
+      opponent: OpponentStatus;
     };
 
 interface MatchCheckInScreenViewProps {
@@ -98,7 +112,8 @@ function Body({state, onRetry, onCheckIn, onStartMatch}: BodyProps) {
     );
   }
 
-  const {match, timing, youCheckedIn, opponentReady} = state;
+  const {match, timing, youCheckedIn, opponent} = state;
+  const opponentReady = opponent === 'ready';
   const ended = timing === 'ended';
 
   return (
@@ -137,10 +152,10 @@ function Body({state, onRetry, onCheckIn, onStartMatch}: BodyProps) {
               <StatusLine who="YOU" status={youCheckedIn ? 'CHECKED IN' : 'NOT CHECKED IN'} done={youCheckedIn} />
               <StatusLine
                 who="OPPONENT"
-                status={opponentReady ? 'READY' : 'NOT READY'}
+                status={OPPONENT_STATUS_TEXT[opponent]}
                 done={opponentReady}
                 // State 2: a quiet sign that the screen is still waiting on them.
-                waiting={youCheckedIn && !opponentReady}
+                waiting={youCheckedIn && opponent === 'not_ready'}
               />
             </View>
             <Text style={styles.privacy}>

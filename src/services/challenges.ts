@@ -553,6 +553,11 @@ export async function cancelChallenge(challengeId: number): Promise<Challenge> {
  * these two players' status for this one confirmed match, so it doesn't
  * expose the court's player list.
  *
+ * NOT CALLED YET: until match_readiness exists, MatchCheckInScreen uses the
+ * real check-in service instead (get_my_check_in for the user,
+ * get_court_players for the opponent once the user is at the court).
+ * Switch it to this once the real function exists.
+ *
  * STUB: the user is never checked in; johanna is, everyone else isn't.
  */
 export async function getMatchReadiness(challengeId: number): Promise<MatchReadiness> {
