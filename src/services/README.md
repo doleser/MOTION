@@ -23,6 +23,22 @@ const { data } = await supabase.from('courts').select('*');
 
 ## Layout
 
-One module per feature, e.g. `auth.ts`, `profiles.ts`, `courts.ts`,
-`checkIns.ts`, `challenges.ts`, `sessions.ts`, `results.ts`. Each exports plain
-async functions with typed inputs and outputs.
+One module per feature. Each exports plain async functions with typed inputs and outputs.
+
+| Module | What it does |
+| --- | --- |
+| `supabase.ts` | Creates the Supabase client from `.env` |
+| `auth.ts`, `AuthContext.tsx` | Log in, sign out, and the current session |
+| `account.ts` | Creating an account (sign-up and the starting profile) |
+| `profile.ts` | Reading your own profile and checking usernames |
+| `courts.ts` | Nearby courts and court details |
+| `checkIns.ts`, `location.ts` | Checking in and out, and reading the phone's location |
+| `players.ts`, `searchQuery.ts` | Searching for other players and reading their profiles |
+| `records.ts` | Win/loss records |
+| `challenges.ts`, `challengeStatus.ts`, `challengeTime.ts` | 1v1 challenges |
+| `errors.ts` | Turning server errors into messages screens can show |
+| `database.types.ts` | Generated types (`npm run types`) |
+
+`fakePlayers.ts` and the `STUB` sections in some modules are temporary sample data.
+They get removed as each backend function is built, and screens don't change when
+that happens.

@@ -1,7 +1,7 @@
 # components/
 
-Reusable UI pieces shared across screens (e.g. `CourtCard.tsx`, `PlayerCard.tsx`,
-`EloRankDisplay.tsx`, `CheckInButton.tsx`).
+Reusable UI pieces shared across screens (e.g. `CourtCard.tsx`, `PlayerRow.tsx`,
+`ProfileElo.tsx`, `MotionButton.tsx`).
 
 A component:
 
