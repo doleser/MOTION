@@ -159,8 +159,7 @@ function Body({state, onRetry, onCheckIn, onStartMatch}: BodyProps) {
               />
             </View>
             <Text style={styles.privacy}>
-              You&apos;ll see if your opponent is here once you check in. Only players checked in at
-              this court can see who&apos;s here.
+              You&apos;ll see if your opponent is here once you check in.
             </Text>
           </>
         )}
