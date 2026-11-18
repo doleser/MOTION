@@ -1,7 +1,7 @@
-import {useIsFocused} from '@react-navigation/native';
+import {useFocusEffect, useIsFocused} from '@react-navigation/native';
 import {StatusBar} from 'expo-status-bar';
-import {useCallback, useEffect, useState} from 'react';
-import {ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {useCallback, useEffect, useRef, useState} from 'react';
+import {ActivityIndicator, AppState, Image, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {ErrorMessage} from '../../components/ErrorMessage';
@@ -11,6 +11,8 @@ import type {MapScreenProps} from '../../navigation/types';
 import {getCourt, type CourtCountUpdate, type CourtDetails} from '../../services/courts';
 import {getErrorMessage} from '../../services/errors';
 import {colors, fonts, spacing, typography} from '../../theme';
+import {CheckInSheets} from './CheckInSheets';
+import {useCheckInFlow} from './useCheckInFlow';
 import {useCourtCounts} from './useCourtCounts';
 
 /** Two digits, like the Figma stats ("03"). */
@@ -18,7 +20,7 @@ function twoDigits(n: number): string {
   return String(n).padStart(2, '0');
 }
 
-/** Figma: COURT / IMA (before check-in). */
+/** Figma: COURT / IMA (before check-in), with the check-in overlays on top. */
 export function CourtDetailsScreen({navigation, route}: MapScreenProps<'CourtDetails'>) {
   const {courtId} = route.params;
   const isFocused = useIsFocused();
@@ -55,12 +57,68 @@ export function CourtDetailsScreen({navigation, route}: MapScreenProps<'CourtDet
   const updateCount = useCallback(({playerCount}: CourtCountUpdate) => {
     setCourt((current) => (current ? {...current, playerCount} : current));
   }, []);
-  useCourtCounts(isFocused && court ? [courtId] : [], updateCount);
 
-  // TODO: check-in needs the check_in database function and a checkIns
-  // service (location within 150 m). Not built yet.
-  function showCheckInComingSoon() {
-    Alert.alert('Check-in is coming soon', 'You can browse courts for now.');
+  // Re-load the court in the background when live counts (re)connect or the
+  // app comes back: changes made while not listening are never sent again.
+  // No spinner, and on failure the screen keeps what it shows.
+  const mounted = useRef(true);
+  useEffect(
+    () => () => {
+      mounted.current = false;
+    },
+    [],
+  );
+  const resync = useCallback(() => {
+    getCourt(courtId).then(
+      (result) => {
+        if (mounted.current) {
+          setCourt(result);
+          setError(null);
+        }
+      },
+      () => {},
+    );
+  }, [courtId]);
+
+  // Listen from the start, not only after the first load, so a check-in made
+  // during that load isn't missed.
+  useCourtCounts(isFocused ? [courtId] : [], updateCount, resync);
+
+  const flow = useCheckInFlow({
+    court: court
+      ? {id: court.id, name: court.name, latitude: court.latitude, longitude: court.longitude}
+      : null,
+    onCheckedIn: () => navigation.navigate('CheckedInCourt', {courtId}),
+    onCourtUnavailable: resync,
+  });
+  const {refreshMyCheckIn} = flow;
+  const isCheckedInHere = flow.myCheckIn?.courtId === courtId;
+
+  // Whether the player is checked in here decides CHECK IN vs GO TO COURT.
+  useFocusEffect(
+    useCallback(() => {
+      void refreshMyCheckIn();
+    }, [refreshMyCheckIn]),
+  );
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        resync();
+        void refreshMyCheckIn();
+      }
+    });
+    return () => subscription.remove();
+  }, [resync, refreshMyCheckIn]);
+
+  // check_in only accepts active courts; closed and unverified ones can't be joined.
+  const available = court?.status === 'active';
+  function startCheckIn() {
+    if (isCheckedInHere) {
+      navigation.navigate('CheckedInCourt', {courtId});
+    } else {
+      flow.open('prompt');
+    }
   }
 
   return (
@@ -114,10 +172,12 @@ export function CourtDetailsScreen({navigation, route}: MapScreenProps<'CourtDet
           {court.accessNote ? <Text style={styles.accessNote}>{court.accessNote}</Text> : null}
 
           <View style={styles.checkIn}>
-            {court.status === 'closed' ? (
+            {!available ? (
               <MotionButton label="NOT AVAILABLE" onPress={() => {}} disabled />
+            ) : isCheckedInHere ? (
+              <MotionButton label="GO TO COURT" onPress={startCheckIn} />
             ) : (
-              <MotionButton label="CHECK IN" onPress={showCheckInComingSoon} />
+              <MotionButton label="CHECK IN" onPress={startCheckIn} />
             )}
           </View>
 
@@ -129,10 +189,10 @@ export function CourtDetailsScreen({navigation, route}: MapScreenProps<'CourtDet
             </Text>
             {court.sessionLive ? <Text style={styles.sessionLine}>1V1 KOTC IS RUNNING</Text> : null}
             <MotionButton
-              label="VERIFY & SEE PLAYERS"
+              label={isCheckedInHere ? 'SEE PLAYERS' : 'VERIFY & SEE PLAYERS'}
               variant="secondary"
-              onPress={showCheckInComingSoon}
-              disabled={court.status === 'closed'}
+              onPress={startCheckIn}
+              disabled={!available}
             />
           </View>
         </ScrollView>
@@ -146,6 +206,12 @@ export function CourtDetailsScreen({navigation, route}: MapScreenProps<'CourtDet
           <ActivityIndicator color={colors.yellow} />
         </View>
       )}
+
+      <CheckInSheets
+        flow={flow}
+        courtName={court?.name ?? ''}
+        onBackToMap={() => navigation.popToTop()}
+      />
     </SafeAreaView>
   );
 }

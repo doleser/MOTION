@@ -304,6 +304,10 @@ export function getCourtPreview(courtId: number, playerCount: number): CourtPrev
   return {typeLine, activityLine};
 }
 
+/** Wait this long after a channel joins before calling onSynced, so channels
+ * that join together cause one re-fetch. */
+const SYNC_DELAY_MS = 250;
+
 /**
  * Calls `onUpdate` whenever the player count changes at one of `courtIds`.
  * Returns a function that stops listening; call it on unmount.
@@ -311,20 +315,53 @@ export function getCourtPreview(courtId: number, playerCount: number): CourtPrev
  * The database broadcasts {courtId, playerCount} on the private topic
  * 'court:<id>' whenever someone checks in or out there. Private means only the
  * database can send; anyone, even signed out, can listen.
+ *
+ * Broadcasts aren't replayed, so a count that changed before a channel joined,
+ * or while the connection was down, is missed. `onSynced` is called once the
+ * channels join, and again after each rejoin, so the caller can re-fetch the
+ * counts. Several channels joining together cause one call, not one each.
  */
 export function subscribeToCourtCounts(
   courtIds: readonly number[],
   onUpdate: (update: CourtCountUpdate) => void,
+  onSynced?: () => void,
 ): () => void {
+  let syncTimer: ReturnType<typeof setTimeout> | null = null;
+  let stopped = false;
+
+  function scheduleSync() {
+    if (!onSynced || stopped) {
+      return;
+    }
+    if (syncTimer) {
+      clearTimeout(syncTimer);
+    }
+    syncTimer = setTimeout(() => {
+      syncTimer = null;
+      onSynced();
+    }, SYNC_DELAY_MS);
+  }
+
   const channels = courtIds.map((courtId) =>
     supabase
       .channel(`court:${courtId}`, {config: {private: true}})
       .on('broadcast', {event: 'count'}, ({payload}) => {
         onUpdate({courtId: payload.courtId, playerCount: payload.playerCount});
       })
-      .subscribe(),
+      .subscribe((status, err) => {
+        if (status === 'SUBSCRIBED') {
+          scheduleSync();
+        } else if (__DEV__ && (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT')) {
+          // supabase-js retries by itself; this is only to spot setup problems.
+          console.warn(`Live counts for court ${courtId}: ${status}`, err);
+        }
+      }),
   );
   return () => {
+    stopped = true;
+    if (syncTimer) {
+      clearTimeout(syncTimer);
+    }
     channels.forEach((channel) => {
       void supabase.removeChannel(channel);
     });
