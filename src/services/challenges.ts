@@ -74,8 +74,9 @@ export interface Challenge {
   closedAt: Date | null;
 }
 
-/** Whether the other player has checked in at the match's court. */
+/** Whether each player in a confirmed match is checked in at its court. */
 export interface MatchReadiness {
+  youCheckedIn: boolean;
   opponentCheckedIn: boolean;
 }
 
@@ -544,16 +545,23 @@ export async function cancelChallenge(challengeId: number): Promise<Challenge> {
 }
 
 /**
- * Whether the other player has checked in for a confirmed match.
+ * Whether the signed-in user and their opponent are each checked in at the
+ * court of a confirmed match. Throws 'challenge_not_found' if it doesn't
+ * exist or isn't theirs.
  *
- * STUB: johanna is checked in, everyone else isn't. The real one will call
- * match_readiness(p_challenge_id), which must only answer the two players
- * in the match, and must not reveal the court's player list.
+ * The real backend function, match_readiness(p_challenge_id), returns ONLY
+ * these two players' status for this one confirmed match, so it doesn't
+ * expose the court's player list.
+ *
+ * STUB: the user is never checked in; johanna is, everyone else isn't.
  */
 export async function getMatchReadiness(challengeId: number): Promise<MatchReadiness> {
   const {stored} = await loadFakeState();
   const challenge = findStored(stored, challengeId);
-  return {opponentCheckedIn: FAKE_READY_OPPONENTS.has(challenge.opponentId)};
+  return {
+    youCheckedIn: false,
+    opponentCheckedIn: FAKE_READY_OPPONENTS.has(challenge.opponentId),
+  };
 }
 
 /**
