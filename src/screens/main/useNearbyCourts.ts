@@ -41,11 +41,17 @@ export function useNearbyCourts() {
   const lastCenter = useRef<LatLng | null>(null);
   const debounceTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const loadAround = useCallback(async (center: LatLng) => {
+  /**
+   * Searches around `center`. A `silent` search (a background re-sync) shows
+   * no spinner, and if it fails the map keeps what it had.
+   */
+  const loadAround = useCallback(async (center: LatLng, {silent = false} = {}) => {
     const requestId = ++latestRequest.current;
     lastCenter.current = center;
-    setIsLoading(true);
-    setError(null);
+    if (!silent) {
+      setIsLoading(true);
+      setError(null);
+    }
     try {
       const result = await getNearbyCourts({
         ...center,
@@ -55,12 +61,14 @@ export function useNearbyCourts() {
       if (requestId === latestRequest.current) {
         // Replace, don't merge: the map always shows the current nearest few.
         setCourts(result);
+        setError(null);
       }
     } catch (e) {
-      if (requestId === latestRequest.current) {
+      if (requestId === latestRequest.current && !silent) {
         setError(getErrorMessage(e));
       }
     } finally {
+      // Also after a silent search: it may have replaced a visible one.
       if (requestId === latestRequest.current) {
         setIsLoading(false);
       }
@@ -92,6 +100,16 @@ export function useNearbyCourts() {
     }
   }, [loadAround]);
 
+  /**
+   * Re-fetch the current courts in the background, e.g. after live counts
+   * reconnect and may have missed changes.
+   */
+  const resync = useCallback(() => {
+    if (lastCenter.current) {
+      loadAround(lastCenter.current, {silent: true});
+    }
+  }, [loadAround]);
+
   /** Apply a live player-count change to one court. */
   const updateCount = useCallback(({courtId, playerCount}: CourtCountUpdate) => {
     setCourts((current) =>
@@ -118,5 +136,5 @@ export function useNearbyCourts() {
     [],
   );
 
-  return {courts, isLoading, error, loadAround, onRegionChangeComplete, refresh, updateCount};
+  return {courts, isLoading, error, loadAround, onRegionChangeComplete, refresh, resync, updateCount};
 }

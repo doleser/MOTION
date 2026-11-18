@@ -219,6 +219,7 @@ describe('getCourt', () => {
  */
 function mockChannels() {
   const handlers = new Map<string, (message: {payload: unknown}) => void>();
+  const statusCallbacks = new Map<string, (status: string) => void>();
   channel.mockImplementation((name: string) => {
     const fake: {on: jest.Mock; subscribe: jest.Mock} = {
       on: jest.fn(),
@@ -230,11 +231,18 @@ function mockChannels() {
         return fake;
       },
     );
-    fake.subscribe.mockReturnValue(fake);
+    fake.subscribe.mockImplementation((callback?: (status: string) => void) => {
+      if (callback) {
+        statusCallbacks.set(name, callback);
+      }
+      return fake;
+    });
     return fake;
   });
   return {
     send: (name: string, payload: unknown) => handlers.get(name)?.({payload}),
+    /** Fakes a channel status change, e.g. 'SUBSCRIBED' on join or rejoin. */
+    setStatus: (name: string, status: string) => statusCallbacks.get(name)?.(status),
   };
 }
 
@@ -252,6 +260,48 @@ describe('subscribeToCourtCounts', () => {
 
     unsubscribe();
     expect(removeChannel).toHaveBeenCalledTimes(2);
+  });
+
+  describe('onSynced', () => {
+    beforeEach(() => jest.useFakeTimers());
+    afterEach(() => jest.useRealTimers());
+
+    it('is called once when several channels join together', () => {
+      const fake = mockChannels();
+      const onSynced = jest.fn();
+      subscribeToCourtCounts([1, 3], jest.fn(), onSynced);
+
+      fake.setStatus('court:1', 'SUBSCRIBED');
+      fake.setStatus('court:3', 'SUBSCRIBED');
+      expect(onSynced).not.toHaveBeenCalled();
+      jest.runAllTimers();
+      expect(onSynced).toHaveBeenCalledTimes(1);
+    });
+
+    it('is called again after a channel rejoins', () => {
+      const fake = mockChannels();
+      const onSynced = jest.fn();
+      subscribeToCourtCounts([1], jest.fn(), onSynced);
+
+      fake.setStatus('court:1', 'SUBSCRIBED');
+      jest.runAllTimers();
+      fake.setStatus('court:1', 'CHANNEL_ERROR');
+      fake.setStatus('court:1', 'SUBSCRIBED');
+      jest.runAllTimers();
+      expect(onSynced).toHaveBeenCalledTimes(2);
+    });
+
+    it('is not called after unsubscribing', () => {
+      const fake = mockChannels();
+      const onSynced = jest.fn();
+      const unsubscribe = subscribeToCourtCounts([1], jest.fn(), onSynced);
+
+      fake.setStatus('court:1', 'SUBSCRIBED');
+      unsubscribe();
+      fake.setStatus('court:1', 'SUBSCRIBED');
+      jest.runAllTimers();
+      expect(onSynced).not.toHaveBeenCalled();
+    });
   });
 
   it('does nothing for an empty list', () => {

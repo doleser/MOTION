@@ -1,7 +1,7 @@
 import {useIsFocused} from '@react-navigation/native';
 import {StatusBar} from 'expo-status-bar';
-import {useCallback, useEffect, useState} from 'react';
-import {ActivityIndicator, Alert, Image, ScrollView, StyleSheet, Text, View} from 'react-native';
+import {useCallback, useEffect, useRef, useState} from 'react';
+import {ActivityIndicator, Alert, AppState, Image, ScrollView, StyleSheet, Text, View} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import {ErrorMessage} from '../../components/ErrorMessage';
@@ -55,7 +55,41 @@ export function CourtDetailsScreen({navigation, route}: MapScreenProps<'CourtDet
   const updateCount = useCallback(({playerCount}: CourtCountUpdate) => {
     setCourt((current) => (current ? {...current, playerCount} : current));
   }, []);
-  useCourtCounts(isFocused && court ? [courtId] : [], updateCount);
+
+  // Re-load the court in the background when live counts (re)connect or the
+  // app comes back: changes made while not listening are never sent again.
+  // No spinner, and on failure the screen keeps what it shows.
+  const mounted = useRef(true);
+  useEffect(
+    () => () => {
+      mounted.current = false;
+    },
+    [],
+  );
+  const resync = useCallback(() => {
+    getCourt(courtId).then(
+      (result) => {
+        if (mounted.current) {
+          setCourt(result);
+          setError(null);
+        }
+      },
+      () => {},
+    );
+  }, [courtId]);
+
+  // Listen from the start, not only after the first load, so a check-in made
+  // during that load isn't missed.
+  useCourtCounts(isFocused ? [courtId] : [], updateCount, resync);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        resync();
+      }
+    });
+    return () => subscription.remove();
+  }, [resync]);
 
   // TODO: check-in needs the check_in database function and a checkIns
   // service (location within 150 m). Not built yet.
