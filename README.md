@@ -2,12 +2,11 @@
 
 Motion is a mobile app for pickup basketball near the University of Washington. It shows which courts are nearby and gives new players an account with a starting Elo rating.
 
-## Living document
+## Documentation
 
-The living document is our project spec.
-
-- In this repository: [docs/LIVING_DOC.md](docs/LIVING_DOC.md)
-- Google Doc: <https://docs.google.com/document/d/1OS1WY_1IL6_StwLFAFapJgoJ0kooe2TsrqxzqifeNa0/edit?usp=sharing>
+- **Living document (project spec):** [docs/LIVING_DOC.md](docs/LIVING_DOC.md), mirrored from the [Google Doc](https://docs.google.com/document/d/1OS1WY_1IL6_StwLFAFapJgoJ0kooe2TsrqxzqifeNa0/edit?usp=sharing)
+- **For developers:** this README, the [coding guidelines](coding-guidelines.md), and a README in each source folder: [screens](src/screens/README.md), [components](src/components/README.md), [navigation](src/navigation/README.md), and [services](src/services/README.md)
+- **For users:** [What works in this beta](#what-works-in-this-beta) below and the [beta landing page](https://doleser.github.io/MOTION/usability/). A full user guide is planned for the final release.
 
 ## What works in this beta
 
@@ -69,6 +68,8 @@ EXPO_PUBLIC_SUPABASE_ANON_KEY=<hosted anon key>
 npx expo start
 ```
 
+The terminal may ask a few questions first, such as whether to log in to an Expo account or use a different port. Answer them before you scan. Until they're answered, Expo Go keeps waiting and then times out.
+
 The terminal prints a QR code. Make sure your phone is on the same Wi-Fi as your computer, then scan it with Expo Go (Android) or the Camera app (iOS). For a simulator or emulator, press the key the terminal shows.
 
 **4. Try it**
@@ -87,7 +88,12 @@ npx tsc --noEmit
 npm test
 ```
 
-Database checks. These need Docker. `supabase start` builds the database from the migrations and the seed, and `supabase test db` runs the SQL tests in [supabase/tests/database](supabase/tests/database).
+Database checks. You don't need to run these to try the app: CI runs them on every pull request (see below). To run them yourself:
+
+1. Install [Docker Desktop](https://www.docker.com/products/docker-desktop/) and start it. `supabase start` runs a local database in Docker containers, so Docker has to be running first.
+2. Run the two commands below from the repository root. The first `start` downloads the Supabase images and can take several minutes. Later starts are faster.
+
+`supabase start` builds the database from the migrations and the seed, and `supabase test db` runs the SQL tests in [supabase/tests/database](supabase/tests/database). Run `npx supabase@2.122.0 stop` when you're done.
 
 ```bash
 npx supabase@2.122.0 start
