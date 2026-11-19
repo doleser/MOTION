@@ -12,7 +12,6 @@
  *   - getChallenge → get_challenge(p_challenge_id)
  *   - acceptChallenge / declineChallenge / cancelChallenge →
  *     accept_challenge / decline_challenge / cancel_challenge(p_challenge_id)
- *   - getMatchReadiness → match_readiness(p_challenge_id)
  *   - getPendingChallengeCount → pending_challenge_count()
  *
  * The status rules (expired, ended, hidden, sections) are in
@@ -72,12 +71,6 @@ export interface Challenge {
   durationMinutes: number;
   /** When it was declined or cancelled; null otherwise. */
   closedAt: Date | null;
-}
-
-/** Whether each player in a confirmed match is checked in at its court. */
-export interface MatchReadiness {
-  youCheckedIn: boolean;
-  opponentCheckedIn: boolean;
 }
 
 /** After a decline, the same player can't be challenged again for this long. */
@@ -207,9 +200,6 @@ const FAKE_SEND_FAILURES: Record<
   'fake-8': 'challenge_pending', // jo_bell challenged the user first
   'fake-9': 'challenge_cooldown', // hoopdreams declined a moment ago
 };
-
-/** TEMPORARY: opponents who have checked in for their match with the user. */
-const FAKE_READY_OPPONENTS = new Set(['fake-7']); // johanna
 
 /** Fake stakes by opponent; anyone else gets the default. */
 const FAKE_STAKES: Record<string, EloStakes> = {
@@ -542,31 +532,6 @@ export async function cancelChallenge(challengeId: number): Promise<Challenge> {
   challenge.status = 'cancelled';
   challenge.closedAt = now;
   return toChallenge(challenge, courts);
-}
-
-/**
- * Whether the signed-in user and their opponent are each checked in at the
- * court of a confirmed match. Throws 'challenge_not_found' if it doesn't
- * exist or isn't theirs.
- *
- * The real backend function, match_readiness(p_challenge_id), returns ONLY
- * these two players' status for this one confirmed match, so it doesn't
- * expose the court's player list.
- *
- * NOT CALLED YET: until match_readiness exists, MatchCheckInScreen uses the
- * real check-in service instead (get_my_check_in for the user,
- * get_court_players for the opponent once the user is at the court).
- * Switch it to this once the real function exists.
- *
- * STUB: the user is never checked in; johanna is, everyone else isn't.
- */
-export async function getMatchReadiness(challengeId: number): Promise<MatchReadiness> {
-  const {stored} = await loadFakeState();
-  const challenge = findStored(stored, challengeId);
-  return {
-    youCheckedIn: false,
-    opponentCheckedIn: FAKE_READY_OPPONENTS.has(challenge.opponentId),
-  };
 }
 
 /**
