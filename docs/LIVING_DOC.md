@@ -74,7 +74,7 @@ Team check-in, the team result variation, and Use cases 6 and 7 are future featu
 
 ### Secondary Actors
 
-- Sign-in provider (email, Apple, or Google)
+- Sign-in provider (email and password)
 - Location service
 
 ### Triggers
@@ -84,20 +84,20 @@ Team check-in, the team result variation, and Use cases 6 and 7 are future featu
 ### Preconditions
 
 - The app is installed and the device is online.
-- No account exists yet for the player's email or sign-in identity.
+- No account exists yet for the player's email.
 
 ### Postconditions (success scenario)
 
-- A verified account exists with a unique handle.
+- An account exists with a unique handle.
 - A provisional starting Elo is assigned in every mode, with its rank tier.
 - Challenge availability is set to open to challenges.
 - The player is on the map with nearby courts shown.
 
 ### List of steps (success scenario)
 
-1. New player taps Create Account and chooses a sign-up method.
-2. New player enters credentials and confirms they are 18 or older.
-3. System creates the account and verifies the player's identity.
+1. New player taps Create Account.
+2. New player enters their name, email, and password, and confirms they are 18 or older.
+3. System creates the account and signs the player in. (Email verification is off for the beta.)
 4. New player chooses a handle and optionally adds position, height, and play-style tags.
 5. System presents the skill self-assessment with 4 choices: (Beginner: “I’ve never played basketball”, Intermediate: “I know the rules and can keep score”, Advanced “I’ve played organized games”)
 6. New player completes the self-assessment. (Beginner: 400, Intermediate: 800, Advanced: 1200)
@@ -107,9 +107,9 @@ Team check-in, the team result variation, and Use cases 6 and 7 are future featu
 
 ### Extensions/variations of the success scenario
 
-- 2 alt - Player signs in with Apple or Google. System skips the verification message. Return to step 4.
+- 2 alt - (Planned, #28) Player signs in with Apple or Google. Return to step 4.
 - 4 alt - Player skips the optional profile fields and can complete them later. Return to step 5.
-- 6 alt - Player skips the assessment. System assigns the default starting Elo of 1200. Return to step 7.
+- 6 alt - Player skips the assessment. System assigns the default starting Elo of 800, the same as Intermediate. Return to step 7.
 - 8 alt - Player denies location access. System asks for a city or ZIP code to center the map. Return to step 9.
 - 8 alt - Player skips the home court and can set it later. Return to step 9.
 
@@ -117,7 +117,6 @@ Team check-in, the team result variation, and Use cases 6 and 7 are future featu
 
 - 1 - Player is under 18. Registration stops and no data is kept. Use case ends.
 - 2 - Email is already registered. System offers log in or account recovery. Use case ends.
-- 3 - Verification message does not arrive. The player can resend it. An unverified player can browse but cannot send or accept ranked challenges. Return to step 3 after a resend, or continue at step 4 unverified.
 - 4 - Handle is taken. System shows available alternatives. Return to step 4.
 - 6 - Assessment answers are inconsistent or extreme. System limits the starting Elo to between 900 and 1500. Return to step 7.
 
