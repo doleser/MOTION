@@ -466,7 +466,7 @@ Team check-in, the team result variation, and Use cases 6 and 7 are future featu
 
 # 4. Non-Functional Requirements
 
-- Privacy is ensured and user data is secure. Users can see court info and player counts before checking in, but can only see who is playing after checking in at that same court. Traffic uses HTTPS, and the entire database has row-level security.
+- Privacy is ensured and user data is secure. Users can see court info and player counts before checking in, but can only see who is playing after checking in at that same court. A player's real name, username, and Elo are part of their profile, which any signed-in user can see (for example, in player search); what stays private is where they are. Traffic uses HTTPS, and the entire database has row-level security.
   - **To check:** a test account reads another user’s row and gets no coordinates.
 - Safety. Blocking and reporting is available and findable from a profile.
   - **To check:** test with 10 subjects and assess whether they are all able to find and block/report a profile.
