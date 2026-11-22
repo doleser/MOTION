@@ -30,6 +30,8 @@ export type ServiceErrorCode =
   | 'challenge_pending'
   | 'challenge_cooldown'
   | 'challenger_busy'
+  | 'challenge_time_taken'
+  | 'time_unavailable'
   | 'challenge_not_found'
   | 'challenge_expired'
   | 'challenge_already_answered'
