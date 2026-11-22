@@ -30,8 +30,8 @@ Sign-up creates the login and then saves the profile on the server. You don't ne
 
 - The map pins, the court card, and the player counts are sample data stored in the app, not loaded from the database
 - After checking in (location within 150 m), the checked-in court page (players here, the queue) is a placeholder. In development builds, PROTOTYPE / LOCATION SCENARIOS on the check-in sheet fakes the location for testing
-- The Search tab (player search and 1v1 challenges) is placeholder screens with sample data
-- Challenges, King of the Court, and confirming a result so Elo changes aren't built yet
+- The Search tab's player search, profiles, and 1v1 challenges load from the database. The Elo stakes shown when sending a challenge are still sample numbers
+- Posting and confirming a result in the app (so Elo changes), and King of the Court, aren't built yet
 
 ## Set up and run
 
