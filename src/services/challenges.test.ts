@@ -5,6 +5,7 @@ import {
   declineChallenge,
   getChallenge,
   getChallengeStatus,
+  getMatchReadiness,
   getPendingChallengeCount,
   listMyChallenges,
 } from './challenges';
@@ -238,5 +239,26 @@ describe('getPendingChallengeCount', () => {
 
     await expect(getPendingChallengeCount()).resolves.toBe(3);
     expect(rpc).toHaveBeenCalledWith('pending_challenge_count');
+  });
+});
+
+describe('getMatchReadiness', () => {
+  it('calls match_readiness and maps the row', async () => {
+    rpc.mockResolvedValue({data: [{you_checked_in: true, opponent_checked_in: false}], error: null});
+
+    await expect(getMatchReadiness(7)).resolves.toEqual({youCheckedIn: true, opponentCheckedIn: false});
+    expect(rpc).toHaveBeenCalledWith('match_readiness', {p_challenge_id: 7});
+  });
+
+  it('maps "Challenge not found." to challenge_not_found', async () => {
+    rpc.mockResolvedValue({data: null, error: {code: '22023', message: 'Challenge not found.'}});
+
+    await expect(getMatchReadiness(7)).rejects.toMatchObject({code: 'challenge_not_found'});
+  });
+
+  it('treats no row as challenge_not_found', async () => {
+    rpc.mockResolvedValue({data: [], error: null});
+
+    await expect(getMatchReadiness(7)).rejects.toMatchObject({code: 'challenge_not_found'});
   });
 });
