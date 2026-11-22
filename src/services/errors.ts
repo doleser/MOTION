@@ -33,7 +33,13 @@ export type ServiceErrorCode =
   | 'challenge_not_found'
   | 'challenge_expired'
   | 'challenge_already_answered'
-  | 'match_ended';
+  | 'match_ended'
+  // Result confirmation (results.ts)
+  | 'self_opponent'
+  | 'opponent_not_found'
+  | 'game_not_found'
+  | 'not_confirmer'
+  | 'result_not_pending';
 
 export class ServiceError extends Error {
   readonly code: ServiceErrorCode;
@@ -154,6 +160,34 @@ export function fromCheckInError(error: PostgrestError): Error {
       return new ServiceError('already_checked_in', error.message);
     case 'Not checked in.':
       return new ServiceError('not_checked_in', error.message);
+    default:
+      return error;
+  }
+}
+
+/**
+ * Postgres errors from preview_elo, confirm_result, and dispute_result.
+ * 42501 with the exact sign-in message is not signed in. Other 42501
+ * errors (permission denied) stay as the database returned them.
+ */
+export function fromResultError(error: PostgrestError): Error {
+  if (error.code === '42501' && error.message === 'Not signed in.') {
+    return new ServiceError('not_signed_in', 'Not signed in.');
+  }
+  if (error.code !== '22023') {
+    return error;
+  }
+  switch (error.message) {
+    case "You can't play yourself.":
+      return new ServiceError('self_opponent', error.message);
+    case 'Opponent not found.':
+      return new ServiceError('opponent_not_found', error.message);
+    case 'Game not found.':
+      return new ServiceError('game_not_found', error.message);
+    case 'The other player confirms this result.':
+      return new ServiceError('not_confirmer', error.message);
+    case 'Result is not waiting for confirmation.':
+      return new ServiceError('result_not_pending', error.message);
     default:
       return error;
   }
