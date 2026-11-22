@@ -11,6 +11,7 @@
  *   - acceptChallenge / declineChallenge / cancelChallenge →
  *     accept_challenge / decline_challenge / cancel_challenge(p_challenge_id)
  *   - getPendingChallengeCount → pending_challenge_count()
+ *   - getMatchReadiness → match_readiness(p_challenge_id)
  *
  * The rules (who can be challenged, overlaps, cooldowns, expiry) are enforced in
  * Postgres; this file doesn't re-check them. Two statuses are never stored and
@@ -312,4 +313,28 @@ export async function getPendingChallengeCount(): Promise<number> {
     throw fromChallengeError(error);
   }
   return data as number;
+}
+
+/** Whether each player in a match is checked in at its court right now. */
+export interface MatchReadiness {
+  youCheckedIn: boolean;
+  opponentCheckedIn: boolean;
+}
+
+/**
+ * Whether the signed-in user and their opponent are checked in at the
+ * match's court. Answers only about these two players, never anyone else at
+ * the court. Throws 'challenge_not_found' if the challenge isn't theirs (or
+ * the two have blocked each other).
+ */
+export async function getMatchReadiness(challengeId: number): Promise<MatchReadiness> {
+  const {data, error} = await supabase.rpc('match_readiness', {p_challenge_id: challengeId});
+  if (error) {
+    throw fromChallengeError(error);
+  }
+  const row = ((data ?? []) as {you_checked_in: boolean; opponent_checked_in: boolean}[])[0];
+  if (!row) {
+    throw serviceError('challenge_not_found');
+  }
+  return {youCheckedIn: row.you_checked_in, opponentCheckedIn: row.opponent_checked_in};
 }
