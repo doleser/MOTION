@@ -84,6 +84,9 @@ const MESSAGES = {
   challenge_pending: "There's already a pending challenge between you two.",
   challenge_cooldown: 'They declined your last challenge. You can challenge them again later.',
   challenger_busy: 'You already have a match at that time.',
+  challenge_time_taken: 'You already sent a challenge for that time.',
+  // Deliberately vague: it shouldn't reveal the other player's schedule.
+  time_unavailable: "This time isn't available anymore.",
   challenge_time_passed: 'That time has passed. Pick a new time.',
   challenge_too_far_ahead: `Pick a time within the next ${MAX_DAYS_AHEAD} days.`,
   invalid_match_length: 'Pick a match length of 15, 30, 45, or 60 minutes.',
@@ -99,7 +102,8 @@ type ChallengeErrorCode = keyof typeof MESSAGES;
 
 /**
  * The 22023 messages the challenge functions raise, and the code each one means.
- * Copied from the header comment of the challenges migration; keep them in sync.
+ * Copied from the header comments of the challenges and challenge_overlap
+ * migrations; keep them in sync.
  * report_result's messages aren't here because nothing in this file calls it.
  */
 const DB_MESSAGES: Record<string, ChallengeErrorCode> = {
@@ -112,6 +116,8 @@ const DB_MESSAGES: Record<string, ChallengeErrorCode> = {
   'Challenge already pending.': 'challenge_pending',
   'Declined in the last 24 hours.': 'challenge_cooldown',
   'You already have a match at that time.': 'challenger_busy',
+  'You already sent a challenge for that time.': 'challenge_time_taken',
+  'Time no longer available.': 'time_unavailable',
   'Challenge not found.': 'challenge_not_found',
   'Challenge expired.': 'challenge_expired',
   'Challenge already answered.': 'challenge_already_answered',
@@ -218,8 +224,9 @@ export async function previewElo(opponentId: string): Promise<EloStakes> {
 }
 
 /**
- * Sends a 1v1 challenge and returns its id. Only the signed-in user's confirmed
- * matches are checked for overlap, not the opponent's.
+ * Sends a 1v1 challenge and returns its id. Only the signed-in user's own
+ * schedule is checked for overlap (their confirmed matches and the challenges
+ * they sent that are still pending), not the opponent's.
  *
  * Fails with a ServiceError the screens can tell apart:
  *   - 'invalid_match_length': not 15, 30, 45, or 60
@@ -227,6 +234,7 @@ export async function previewElo(opponentId: string): Promise<EloStakes> {
  *   - 'player_not_found' / 'court_not_found'
  *   - 'not_accepting_challenges', 'challenge_pending', 'challenge_cooldown'
  *   - 'challenger_busy': overlaps one of the user's confirmed matches
+ *   - 'challenge_time_taken': overlaps a challenge the user sent that's still pending
  */
 export async function createChallenge(challenge: NewChallenge): Promise<number> {
   const {data, error} = await supabase.rpc('create_challenge', {
@@ -272,11 +280,13 @@ export async function getChallenge(challengeId: number): Promise<Challenge> {
 }
 
 /**
- * Accepts an incoming challenge; it becomes a confirmed match. Fails with:
+ * Accepts an incoming challenge; it becomes a confirmed match. The database
+ * also cancels both players' other pending challenges at that time. Fails with:
  *   - 'challenge_not_found'
  *   - 'challenge_expired': its match time has come
  *   - 'challenge_already_answered': no longer pending (e.g. they cancelled)
  *   - 'challenger_busy': overlaps one of the user's confirmed matches
+ *   - 'time_unavailable': the challenger has a match then (rare: two accepts at once)
  */
 export async function acceptChallenge(challengeId: number): Promise<Challenge> {
   return callForOne('accept_challenge', challengeId);

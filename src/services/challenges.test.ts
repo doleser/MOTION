@@ -103,6 +103,7 @@ describe('createChallenge', () => {
     ['22023', 'Challenge already pending.', 'challenge_pending'],
     ['22023', 'Declined in the last 24 hours.', 'challenge_cooldown'],
     ['22023', 'You already have a match at that time.', 'challenger_busy'],
+    ['22023', 'You already sent a challenge for that time.', 'challenge_time_taken'],
   ])('maps %s "%s" to %s', async (code, message, expected) => {
     rpc.mockResolvedValue({data: null, error: {code, message}});
 
@@ -220,6 +221,7 @@ describe.each([
     ['Challenge already answered.', 'challenge_already_answered'],
     ['Match ended.', 'match_ended'],
     ['You already have a match at that time.', 'challenger_busy'],
+    ['Time no longer available.', 'time_unavailable'],
   ])('maps "%s" to %s', async (message, expected) => {
     rpc.mockResolvedValue({data: null, error: {code: '22023', message}});
 
