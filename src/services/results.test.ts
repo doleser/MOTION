@@ -1,9 +1,10 @@
-import {confirmResult, disputeResult, previewElo} from './results';
+import {confirmResult, disputeResult, getMyEloChange, previewElo} from './results';
 import {supabase} from './supabase';
 
-jest.mock('./supabase', () => ({supabase: {rpc: jest.fn()}}));
+jest.mock('./supabase', () => ({supabase: {rpc: jest.fn(), from: jest.fn()}}));
 
 const rpc = supabase.rpc as jest.Mock;
+const from = supabase.from as jest.Mock;
 
 const stakesRow = {win: 23, lose: -9};
 
@@ -122,5 +123,34 @@ describe('disputeResult', () => {
       code: 'not_confirmer',
       message: 'The other player confirms this result.',
     });
+  });
+});
+
+describe('getMyEloChange', () => {
+  /** from('elo_history').select(...).eq('game_id', id).maybeSingle() */
+  function mockRow(result: {data: unknown; error: unknown}) {
+    const eq = jest.fn().mockReturnValue({maybeSingle: jest.fn().mockResolvedValue(result)});
+    from.mockReturnValue({select: jest.fn().mockReturnValue({eq})});
+    return eq;
+  }
+
+  it('reads my elo_history row for the game', async () => {
+    const eq = mockRow({data: {game_id: 301, elo_before: 1398, elo_after: 1414}, error: null});
+
+    await expect(getMyEloChange(301)).resolves.toEqual({gameId: 301, eloBefore: 1398, eloAfter: 1414});
+    expect(from).toHaveBeenCalledWith('elo_history');
+    expect(eq).toHaveBeenCalledWith('game_id', 301);
+  });
+
+  it('returns null when the game changed no rating (not confirmed, voided, casual)', async () => {
+    mockRow({data: null, error: null});
+
+    await expect(getMyEloChange(301)).resolves.toBeNull();
+  });
+
+  it('throws a database error', async () => {
+    mockRow({data: null, error: {code: '42501', message: 'permission denied'}});
+
+    await expect(getMyEloChange(301)).rejects.toMatchObject({code: '42501'});
   });
 });

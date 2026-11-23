@@ -84,6 +84,8 @@ export type SearchStackParamList = {
   ChallengeDetails: {challengeId: number};
   /** Check in at the court for a confirmed 1v1 match. */
   MatchCheckIn: {challengeId: number};
+  /** A ranked 1v1's result: report who won, wait, confirm or dispute, and the outcome. */
+  MatchResult: {challengeId: number};
 };
 
 // ---------- Screen prop helpers ----------

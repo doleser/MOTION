@@ -1,11 +1,12 @@
 import {useFocusEffect, useIsFocused} from '@react-navigation/native';
 import {StatusBar} from 'expo-status-bar';
-import {useCallback, useEffect, useState} from 'react';
+import {useCallback, useEffect, useRef, useState} from 'react';
 import {AppState, StyleSheet, View} from 'react-native';
 
 import type {SearchScreenProps} from '../../navigation/types';
 import {getChallenge, getMatchReadiness, type Challenge} from '../../services/challenges';
 import {getCourt} from '../../services/courts';
+import {isResultAwaitingAnswer} from '../../services/challengeStatus';
 import {getErrorMessage} from '../../services/errors';
 import {colors} from '../../theme';
 import {CheckInSheets} from '../main/CheckInSheets';
@@ -15,6 +16,7 @@ import {
   type MatchCheckInState,
   type OpponentStatus,
 } from './MatchCheckInScreenView';
+import {getMatchAction} from './matchResult';
 import {getMatchTiming} from './matchTime';
 
 /** How often the screen checks the clock ("Now", match ended). */
@@ -22,6 +24,9 @@ const CLOCK_TICK_MS = 30 * 1000;
 
 /** How often to look for the opponent at the court once the user is there. */
 const OPPONENT_CHECK_MS = 15 * 1000;
+
+/** How often to look for a result the opponent reported. */
+const RESULT_CHECK_MS = 10 * 1000;
 
 type Loaded = {ok: true; challenge: Challenge; court: CheckInCourt} | {ok: false; message: string};
 
@@ -36,7 +41,13 @@ type Loaded = {ok: true; challenge: Challenge; court: CheckInCourt} | {ok: false
  *     only about the two players, never anyone else at the court (see
  *     useOpponentReadiness). The app only asks once the user is checked in
  *     there; before that it's "CHECK IN TO SEE".
- *   - Start Match does nothing yet (no challenges backend).
+ *   - The main button comes from getMatchAction (matchResult.ts). START
+ *     MATCH (ranked, both here, start time reached), REPORT RESULT (after
+ *     the match), and VIEW RESULT open MatchResult. Casual matches have no
+ *     result, so once both are here there's no button.
+ *   - Live: from just before the start, a ranked match with no result is
+ *     re-checked every RESULT_CHECK_MS. When the opponent reports, the
+ *     screen opens MatchResult by itself to confirm or dispute it.
  */
 export function MatchCheckInScreen({navigation, route}: SearchScreenProps<'MatchCheckIn'>) {
   const {challengeId} = route.params;
@@ -63,7 +74,9 @@ export function MatchCheckInScreen({navigation, route}: SearchScreenProps<'Match
     };
   }, [challengeId]);
 
-  useEffect(() => load(), [load]);
+  // Loads when the screen comes into view, including when coming back from
+  // MatchResult, so a new result shows VIEW RESULT.
+  useFocusEffect(load);
 
   // Keep the clock moving, so "Now" and "match time has passed" show up
   // while the screen is open.
@@ -105,6 +118,48 @@ export function MatchCheckInScreen({navigation, route}: SearchScreenProps<'Match
   const opponent = useOpponentReadiness(youCheckedIn && isFocused ? challengeId : null);
   const state = toState(loaded, now, youCheckedIn, opponent);
 
+  // A ranked match that has (nearly) started and has no result yet: look
+  // for one the opponent reported.
+  const watchForResult =
+    isFocused &&
+    match !== null &&
+    match.ranked &&
+    match.result === null &&
+    getMatchTiming(match.startsAt, match.durationMinutes, now) !== 'later';
+  useEffect(() => {
+    if (!watchForResult) return;
+    let isCurrent = true;
+    const check = () => {
+      getChallenge(challengeId).then(
+        (challenge) => {
+          if (isCurrent) setLoaded((current) => (current?.ok ? {...current, challenge} : current));
+        },
+        () => {}, // Keep the last answer; the next check tries again.
+      );
+    };
+    const timer = setInterval(check, RESULT_CHECK_MS);
+    const subscription = AppState.addEventListener('change', (appState) => {
+      if (appState === 'active') check();
+    });
+    return () => {
+      isCurrent = false;
+      clearInterval(timer);
+      subscription.remove();
+    };
+  }, [watchForResult, challengeId]);
+
+  // The moment the opponent's result shows up here, open it to confirm or
+  // dispute. Only on that change, so going back doesn't reopen it.
+  const hadResult = useRef<boolean | null>(null);
+  useEffect(() => {
+    if (match === null) return;
+    const hasResult = match.result !== null;
+    if (hadResult.current === false && hasResult && isFocused && isResultAwaitingAnswer(match)) {
+      navigation.navigate('MatchResult', {challengeId});
+    }
+    hadResult.current = hasResult;
+  }, [match, isFocused, navigation, challengeId]);
+
   return (
     <View style={styles.root}>
       {/* White clock and battery on the dark screen. */}
@@ -114,8 +169,7 @@ export function MatchCheckInScreen({navigation, route}: SearchScreenProps<'Match
         onBack={() => navigation.goBack()}
         onRetry={retry}
         onCheckIn={() => flow.open('prompt')}
-        // Not wired yet: needs the challenges backend.
-        onStartMatch={() => {}}
+        onOpenResult={() => navigation.navigate('MatchResult', {challengeId})}
       />
       <CheckInSheets
         flow={flow}
@@ -193,6 +247,17 @@ function toState(
     timing: getMatchTiming(challenge.startsAt, challenge.durationMinutes, now),
     youCheckedIn,
     opponent,
+    action: getMatchAction(
+      {
+        ranked: challenge.ranked,
+        hasResult: challenge.result !== null,
+        startsAt: challenge.startsAt,
+        durationMinutes: challenge.durationMinutes,
+        youCheckedIn,
+        opponentReady: opponent === 'ready',
+      },
+      now,
+    ),
   };
 }
 

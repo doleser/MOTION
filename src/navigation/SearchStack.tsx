@@ -3,6 +3,7 @@ import {createNativeStackNavigator} from '@react-navigation/native-stack';
 import {ChallengeDetailsScreen} from '../screens/search/ChallengeDetailsScreen';
 import {ChallengesInboxScreen} from '../screens/search/ChallengesInboxScreen';
 import {MatchCheckInScreen} from '../screens/search/MatchCheckInScreen';
+import {MatchResultScreen} from '../screens/search/MatchResultScreen';
 import {CreateChallengeScreen} from '../screens/search/CreateChallengeScreen';
 import {PlayerProfileScreen} from '../screens/search/PlayerProfileScreen';
 import {SearchScreen} from '../screens/search/SearchScreen';
@@ -47,6 +48,7 @@ export function SearchStack() {
         }}
       />
       <Stack.Screen name="MatchCheckIn" component={MatchCheckInScreen} />
+      <Stack.Screen name="MatchResult" component={MatchResultScreen} />
     </Stack.Navigator>
   );
 }
