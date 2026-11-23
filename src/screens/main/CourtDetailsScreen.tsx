@@ -188,12 +188,6 @@ export function CourtDetailsScreen({navigation, route}: MapScreenProps<'CourtDet
               queue.
             </Text>
             {court.sessionLive ? <Text style={styles.sessionLine}>1V1 KOTC IS RUNNING</Text> : null}
-            <MotionButton
-              label={isCheckedInHere ? 'SEE PLAYERS' : 'VERIFY & SEE PLAYERS'}
-              variant="secondary"
-              onPress={startCheckIn}
-              disabled={!available}
-            />
           </View>
         </ScrollView>
       ) : error ? (
