@@ -1,4 +1,4 @@
-import {useFocusEffect, useIsFocused} from '@react-navigation/native';
+import {useIsFocused} from '@react-navigation/native';
 import {StatusBar} from 'expo-status-bar';
 import {useCallback, useEffect, useState} from 'react';
 
@@ -7,12 +7,16 @@ import {sortIntoSections} from '../../services/challengeStatus';
 import {listMyChallenges, type Challenge} from '../../services/challenges';
 import {getErrorMessage} from '../../services/errors';
 import {ChallengesInboxScreenView, type InboxState} from './ChallengesInboxScreenView';
+import {usePollWhileFocused} from './usePollWhileFocused';
 
 /**
  * How often the sections are re-sorted while the inbox is open, so a
  * challenge that expires or a match that ends moves on its own.
  */
 const CLOCK_TICK_MS = 30 * 1000;
+
+/** How often the list is reloaded while the inbox is open, to catch the other player's moves. */
+const RELOAD_MS = 15 * 1000;
 
 /** The last successful load, or why it failed. */
 type Loaded = {ok: true; challenges: Challenge[]} | {ok: false; message: string};
@@ -52,9 +56,11 @@ export function ChallengesInboxScreen({navigation}: SearchScreenProps<'Challenge
     };
   }, []);
 
-  // Load every time the inbox comes into view, including when the
-  // challenge pop-up closes, so a status changed there shows here too.
-  useFocusEffect(load);
+  // Load every time the inbox comes into view (including when the challenge
+  // pop-up closes, so a status changed there shows here too), then every
+  // RELOAD_MS and when the app comes back, so the other player's moves show
+  // up without leaving the screen.
+  usePollWhileFocused(load, RELOAD_MS);
 
   // Keep the clock moving while the inbox is showing.
   useEffect(() => {
