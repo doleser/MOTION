@@ -8,11 +8,10 @@ import {
   cancelChallenge,
   declineChallenge,
   getChallenge,
-  previewElo,
   type Challenge,
-  type EloStakes,
 } from '../../services/challenges';
 import {getErrorMessage, isServiceError} from '../../services/errors';
+import {previewElo, type EloStakes} from '../../services/results';
 import {
   ChallengeDetailsScreenView,
   type BusyAction,

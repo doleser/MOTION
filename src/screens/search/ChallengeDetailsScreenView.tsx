@@ -5,7 +5,8 @@ import {ErrorMessage} from '../../components/ErrorMessage';
 import {MotionButton} from '../../components/MotionButton';
 import {PlayerRow} from '../../components/PlayerRow';
 import type {ChallengeDisplayStatus} from '../../services/challengeStatus';
-import type {Challenge, EloStakes} from '../../services/challenges';
+import type {Challenge} from '../../services/challenges';
+import type {EloStakes} from '../../services/results';
 import {colors, sizes, spacing, typography} from '../../theme';
 import {formatMatchTime} from './matchTime';
 

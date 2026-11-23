@@ -45,12 +45,6 @@ import {supabase} from './supabase';
  */
 export type ChallengeStatus = 'can_challenge' | 'not_accepting' | 'pending' | 'declined_recently';
 
-/** What the signed-in user gains by winning, and loses by losing (negative). */
-export interface EloStakes {
-  win: number;
-  lose: number;
-}
-
 export interface NewChallenge {
   opponentId: string;
   ranked: boolean;
@@ -208,19 +202,6 @@ export async function getChallengeStatus(opponentId: string): Promise<ChallengeS
     throw fromChallengeError(error);
   }
   return data as ChallengeStatus;
-}
-
-/**
- * The Elo stakes of a ranked game against `opponentId`.
- *
- * TODO: TEMPORARY fixed numbers. Jace's #106 adds the real previewElo to
- * results.ts; once it merges, switch the screens' imports (and EloStakes) to
- * results.ts and delete this.
- */
-export async function previewElo(opponentId: string): Promise<EloStakes> {
-  void opponentId; // the real one sends it; the screens already pass it
-  await new Promise((resolve) => setTimeout(resolve, 500));
-  return {win: 16, lose: -14};
 }
 
 /**
