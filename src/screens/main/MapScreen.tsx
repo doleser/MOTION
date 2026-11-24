@@ -36,6 +36,8 @@ import {useNearbyCourts} from './useNearbyCourts';
 
 // Recenter icon, downloaded from Figma ("Icon / target").
 import TargetIcon from '../../../assets/icons/target.svg';
+// Your location, downloaded from Figma ("Your location / Blue basketball").
+import BasketballIcon from '../../../assets/icons/location-basketball.svg';
 
 /** How far the map is zoomed when it opens or recenters (about 4 km tall). */
 const START_DELTA = 0.04;
@@ -331,7 +333,7 @@ const CourtMapPin = memo(function CourtMapPin({
   );
 });
 
-/** The user's position. Figma: "Your location / demo" + "YOU". */
+/** The user's position. Figma: "Your location / Blue basketball" + "YOU label". */
 function YouMarker({location}: {location: LatLng}) {
   const [redraw, setRedraw] = useState(true);
   useEffect(() => {
@@ -342,15 +344,15 @@ function YouMarker({location}: {location: LatLng}) {
   return (
     <Marker
       coordinate={location}
-      anchor={{x: 0.5, y: YOU_DOT_SIZE / 2 / YOU_MARKER_HEIGHT}}
+      anchor={{x: 0.5, y: YOU_BALL_SIZE / 2 / YOU_MARKER_HEIGHT}}
       tracksViewChanges={redraw}
       tappable={false}>
-      <PinAnchor width={YOU_MARKER_WIDTH} pointY={YOU_DOT_SIZE / 2}>
+      <PinAnchor width={YOU_MARKER_WIDTH} pointY={YOU_BALL_SIZE / 2}>
         <View style={styles.you}>
-          <View style={styles.youDot}>
-            <View style={styles.youCenter} />
+          <BasketballIcon width={YOU_BALL_SIZE} height={YOU_BALL_SIZE} />
+          <View style={styles.youTag}>
+            <Text style={styles.youLabel}>YOU</Text>
           </View>
-          <Text style={styles.youLabel}>YOU</Text>
         </View>
       </PinAnchor>
     </Marker>
@@ -396,11 +398,14 @@ function PinAnchor({
   );
 }
 
-const YOU_DOT_SIZE = 16;
-const YOU_LABEL_GAP = 4;
-const YOU_LABEL_HEIGHT = 12;
-const YOU_MARKER_HEIGHT = YOU_DOT_SIZE + YOU_LABEL_GAP + YOU_LABEL_HEIGHT;
-const YOU_MARKER_WIDTH = 38;
+/** The ball plus its halo. Figma: 48.4 square. */
+const YOU_BALL_SIZE = 48;
+/** Figma: the YOU tag starts 42 below the ball's top, over the halo's edge. */
+const YOU_TAG_TOP = 42;
+const YOU_TAG_HEIGHT = 24;
+const YOU_TAG_WIDTH = 44;
+const YOU_MARKER_HEIGHT = YOU_TAG_TOP + YOU_TAG_HEIGHT;
+const YOU_MARKER_WIDTH = YOU_BALL_SIZE;
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -481,8 +486,8 @@ const styles = StyleSheet.create({
   },
   recenter: {
     alignSelf: 'flex-end',
-    // Figma: 102 above the hint card.
-    marginBottom: 102,
+    // Sits just above the hint card instead of floating mid-map.
+    marginBottom: spacing.md,
     width: sizes.touchTarget,
     height: sizes.touchTarget,
     alignItems: 'center',
@@ -526,27 +531,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: YOU_MARKER_WIDTH,
     height: YOU_MARKER_HEIGHT,
-    gap: YOU_LABEL_GAP,
   },
-  youDot: {
-    width: YOU_DOT_SIZE,
-    height: YOU_DOT_SIZE,
+  youTag: {
+    position: 'absolute',
+    top: YOU_TAG_TOP,
+    width: YOU_TAG_WIDTH,
+    height: YOU_TAG_HEIGHT,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.bg,
-    borderWidth: sizes.border,
-    borderColor: colors.text,
-  },
-  youCenter: {
-    width: 6,
-    height: 6,
-    backgroundColor: colors.text,
   },
   youLabel: {
-    // Figma: Inter Bold 9/12, typed directly.
+    // Figma: Inter Bold 12/16, typed directly.
     fontFamily: fonts.interBold,
-    fontSize: 9,
-    lineHeight: YOU_LABEL_HEIGHT,
-    color: colors.text,
+    fontSize: 12,
+    lineHeight: 16,
+    color: colors.blue,
   },
 });
