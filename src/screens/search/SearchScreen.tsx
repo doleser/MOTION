@@ -1,4 +1,4 @@
-import {useFocusEffect, useIsFocused} from '@react-navigation/native';
+import {useIsFocused} from '@react-navigation/native';
 import {StatusBar} from 'expo-status-bar';
 import {useCallback, useEffect, useState} from 'react';
 import {Keyboard} from 'react-native';
@@ -9,9 +9,13 @@ import {getErrorMessage} from '../../services/errors';
 import {searchPlayers, type PlayerSearchResult} from '../../services/players';
 import {parseSearchQuery} from '../../services/searchQuery';
 import {SearchScreenView, type SearchStatus} from './SearchScreenView';
+import {usePollWhileFocused} from './usePollWhileFocused';
 
 /** Wait this long after the last keystroke before searching (like ChooseHandle). */
 const SEARCH_DELAY_MS = 400;
+
+/** How often the inbox badge is reloaded while this screen is open. */
+const BADGE_RELOAD_MS = 15 * 1000;
 
 /**
  * The answer to one search. `query` and `attempt` say which search it
@@ -67,25 +71,25 @@ export function SearchScreen({navigation}: SearchScreenProps<'SearchHome'>) {
   }, [searchQuery, attempt]);
 
   // Refresh the badge every time this screen comes back into view (e.g.
-  // after accepting a challenge in the inbox).
-  useFocusEffect(
-    useCallback(() => {
-      let isCurrent = true;
-      getPendingChallengeCount().then(
-        (count) => {
-          if (isCurrent) {
-            setPendingCount(count);
-          }
-        },
-        () => {
-          // The badge is a hint, not worth an error message: keep the last count.
-        },
-      );
-      return () => {
-        isCurrent = false;
-      };
-    }, []),
-  );
+  // after accepting a challenge in the inbox), then every BADGE_RELOAD_MS
+  // and when the app comes back, so a new challenge shows up on its own.
+  const loadBadge = useCallback(() => {
+    let isCurrent = true;
+    getPendingChallengeCount().then(
+      (count) => {
+        if (isCurrent) {
+          setPendingCount(count);
+        }
+      },
+      () => {
+        // The badge is a hint, not worth an error message: keep the last count.
+      },
+    );
+    return () => {
+      isCurrent = false;
+    };
+  }, []);
+  usePollWhileFocused(loadBadge, BADGE_RELOAD_MS);
 
   function getStatus(): SearchStatus {
     switch (parsed.kind) {
