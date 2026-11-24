@@ -90,7 +90,16 @@ export function ChallengesInboxScreen({navigation}: SearchScreenProps<'Challenge
         onRefresh={refresh}
         onRetry={retry}
         onBack={() => navigation.goBack()}
-        onOpenChallenge={(challengeId) => navigation.navigate('ChallengeDetails', {challengeId})}
+        onOpenChallenge={(challengeId) => {
+          // A match with a reported result opens straight to its result
+          // screen (Confirm / Dispute, Waiting, or the outcome).
+          const challenge = loaded?.ok ? loaded.challenges.find((c) => c.id === challengeId) : undefined;
+          if (challenge?.result) {
+            navigation.navigate('MatchResult', {challengeId});
+          } else {
+            navigation.navigate('ChallengeDetails', {challengeId});
+          }
+        }}
       />
     </>
   );

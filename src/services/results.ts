@@ -134,3 +134,20 @@ export async function disputeResult(gameId: number): Promise<GameResult> {
   }
   return toGame(row);
 }
+
+/**
+ * The signed-in user's rating before and after a confirmed ranked game,
+ * from elo_history (players can read only their own rows). Null when there's
+ * no change for that game: not confirmed yet, voided, or casual.
+ */
+export async function getMyEloChange(gameId: number): Promise<EloChange | null> {
+  const {data, error} = await supabase
+    .from('elo_history')
+    .select('game_id, elo_before, elo_after')
+    .eq('game_id', gameId)
+    .maybeSingle();
+  if (error) {
+    throw error;
+  }
+  return data && data.game_id !== null ? toChange({...data, game_id: data.game_id}) : null;
+}

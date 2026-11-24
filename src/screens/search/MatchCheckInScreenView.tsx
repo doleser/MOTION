@@ -6,6 +6,7 @@ import {MotionButton} from '../../components/MotionButton';
 import {PlayerRow} from '../../components/PlayerRow';
 import {ScreenHeader} from '../../components/ScreenHeader';
 import {colors, sizes, spacing, typography} from '../../theme';
+import type {MatchAction} from './matchResult';
 import {formatClockTime, formatMatchTime} from './matchTime';
 
 /** The accepted match, as this screen shows it. */
@@ -52,6 +53,8 @@ export type MatchCheckInState =
       /** The signed-in user is checked in at the match's court. */
       youCheckedIn: boolean;
       opponent: OpponentStatus;
+      /** The main button (getMatchAction in matchResult.ts). */
+      action: MatchAction;
     };
 
 interface MatchCheckInScreenViewProps {
@@ -59,7 +62,8 @@ interface MatchCheckInScreenViewProps {
   onBack: () => void;
   onRetry: () => void;
   onCheckIn: () => void;
-  onStartMatch: () => void;
+  /** START MATCH, REPORT RESULT, and VIEW RESULT: open the result screen. */
+  onOpenResult: () => void;
 }
 
 /**
@@ -76,13 +80,13 @@ export function MatchCheckInScreenView({
   onBack,
   onRetry,
   onCheckIn,
-  onStartMatch,
+  onOpenResult,
 }: MatchCheckInScreenViewProps) {
   return (
     // Bottom edge left out: the tab bar already sits above the home bar.
     <SafeAreaView style={styles.screen} edges={['top']}>
       <ScreenHeader title="DIRECT 1V1 / ACCEPTED" onBack={onBack} />
-      <Body state={state} onRetry={onRetry} onCheckIn={onCheckIn} onStartMatch={onStartMatch} />
+      <Body state={state} onRetry={onRetry} onCheckIn={onCheckIn} onOpenResult={onOpenResult} />
     </SafeAreaView>
   );
 }
@@ -91,10 +95,10 @@ interface BodyProps {
   state: MatchCheckInState;
   onRetry: () => void;
   onCheckIn: () => void;
-  onStartMatch: () => void;
+  onOpenResult: () => void;
 }
 
-function Body({state, onRetry, onCheckIn, onStartMatch}: BodyProps) {
+function Body({state, onRetry, onCheckIn, onOpenResult}: BodyProps) {
   if (state.kind === 'loading') {
     return (
       <View style={styles.centered}>
@@ -112,9 +116,10 @@ function Body({state, onRetry, onCheckIn, onStartMatch}: BodyProps) {
     );
   }
 
-  const {match, timing, youCheckedIn, opponent} = state;
+  const {match, timing, youCheckedIn, opponent, action} = state;
   const opponentReady = opponent === 'ready';
   const ended = timing === 'ended';
+  const casualReady = action === 'casual_ready';
 
   return (
     <>
@@ -158,27 +163,39 @@ function Body({state, onRetry, onCheckIn, onStartMatch}: BodyProps) {
                 waiting={youCheckedIn && opponent === 'not_ready'}
               />
             </View>
-            <Text style={styles.privacy}>
-              You&apos;ll see if your opponent is here once you check in.
-            </Text>
+            {casualReady ? (
+              <>
+                <Text style={styles.casual}>BOTH CHECKED IN · CASUAL MATCH</Text>
+                <Text style={styles.body}>Casual matches aren&apos;t recorded. Enjoy the game.</Text>
+              </>
+            ) : (
+              <Text style={styles.privacy}>
+                You&apos;ll see if your opponent is here once you check in.
+              </Text>
+            )}
           </>
         )}
       </ScrollView>
 
-      {ended ? null : (
+      {hasButton(action) ? (
         // Pinned above the tab bar (Figma); the content scrolls behind it.
         <View style={styles.footer}>
           <MainButton
-            youCheckedIn={youCheckedIn}
-            opponentReady={opponentReady}
+            action={action}
             opponentFirstName={firstName(match.opponent.realName)}
+            startsAt={match.startsAt}
             onCheckIn={onCheckIn}
-            onStartMatch={onStartMatch}
+            onOpenResult={onOpenResult}
           />
         </View>
-      )}
+      ) : null}
     </>
   );
+}
+
+/** 'casual_ready' and 'none' have no button. */
+function hasButton(action: MatchAction): boolean {
+  return action !== 'casual_ready' && action !== 'none';
 }
 
 interface StatusLineProps {
@@ -203,30 +220,49 @@ function StatusLine({who, status, done, waiting = false}: StatusLineProps) {
 }
 
 interface MainButtonProps {
-  youCheckedIn: boolean;
-  opponentReady: boolean;
+  action: MatchAction;
   opponentFirstName: string;
+  startsAt: Date;
   onCheckIn: () => void;
-  onStartMatch: () => void;
+  onOpenResult: () => void;
 }
 
-/** The pinned button: check in, then wait, then start. */
-function MainButton({youCheckedIn, opponentReady, opponentFirstName, onCheckIn, onStartMatch}: MainButtonProps) {
-  if (!youCheckedIn) {
-    return <MotionButton label="CHECK IN AT MEETING COURT" onPress={onCheckIn} />;
+/**
+ * The pinned button: check in, wait for the opponent and the start, then
+ * start; after the match, report or view the result. The waiting versions
+ * are greyed out in the same spot, so the bottom of the screen doesn't jump.
+ */
+function MainButton({action, opponentFirstName, startsAt, onCheckIn, onOpenResult}: MainButtonProps) {
+  switch (action) {
+    case 'check_in':
+      return <MotionButton label="CHECK IN AT MEETING COURT" onPress={onCheckIn} />;
+    case 'waiting_for_opponent':
+      return (
+        <MotionButton
+          label={`WAITING FOR ${opponentFirstName.toUpperCase()}`}
+          variant="secondary"
+          disabled
+          onPress={onOpenResult}
+        />
+      );
+    case 'waiting_for_start':
+      return (
+        <MotionButton
+          label={`STARTS AT ${formatClockTime(startsAt).toUpperCase()}`}
+          variant="secondary"
+          disabled
+          onPress={onOpenResult}
+        />
+      );
+    case 'start_match':
+      return <MotionButton label="START MATCH" onPress={onOpenResult} />;
+    case 'report_result':
+      return <MotionButton label="REPORT RESULT" onPress={onOpenResult} />;
+    case 'view_result':
+      return <MotionButton label="VIEW RESULT" onPress={onOpenResult} />;
+    default:
+      return null;
   }
-  if (!opponentReady) {
-    // Greyed out in the same spot, so the bottom of the screen doesn't jump.
-    return (
-      <MotionButton
-        label={`WAITING FOR ${opponentFirstName.toUpperCase()}`}
-        variant="secondary"
-        disabled
-        onPress={onStartMatch}
-      />
-    );
-  }
-  return <MotionButton label="START MATCH" onPress={onStartMatch} />;
 }
 
 /** "Dev Shah" → "Dev". */
@@ -315,6 +351,10 @@ const styles = StyleSheet.create({
     color: colors.text,
   },
   statusDone: {
+    color: colors.yellow,
+  },
+  casual: {
+    ...typography.label,
     color: colors.yellow,
   },
   privacy: {

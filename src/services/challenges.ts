@@ -12,6 +12,7 @@
  *     accept_challenge / decline_challenge / cancel_challenge(p_challenge_id)
  *   - getPendingChallengeCount → pending_challenge_count()
  *   - getMatchReadiness → match_readiness(p_challenge_id)
+ *   - reportResult → report_result(p_challenge_id, p_winner_id)
  *
  * The rules (who can be challenged, overlaps, cooldowns, expiry) are enforced in
  * Postgres; this file doesn't re-check them. Two statuses are never stored and
@@ -67,6 +68,24 @@ export interface Challenge {
   durationMinutes: number;
   /** When it was declined or cancelled; null otherwise. */
   closedAt: Date | null;
+  /** The reported result, or null if no one has reported one yet. */
+  result: ChallengeResult | null;
+}
+
+/**
+ * A 1v1's reported result (its games row):
+ *   - 'pending': a ranked result waiting for the other player to confirm or
+ *     dispute it (results.ts confirmResult / disputeResult)
+ *   - 'confirmed': it counts. Casual results are confirmed right away.
+ *   - 'voided': the other player disputed it; it doesn't count
+ */
+export interface ChallengeResult {
+  gameId: number;
+  status: 'pending' | 'confirmed' | 'voided';
+  /** The user ID of the player who won. */
+  winnerId: string;
+  /** The user ID of the player who reported it. */
+  reportedBy: string;
 }
 
 // ---------- Messages ----------
@@ -90,6 +109,10 @@ const MESSAGES = {
   challenge_expired: 'This challenge has expired.',
   challenge_already_answered: 'This challenge has already been answered.',
   match_ended: 'This match has already ended.',
+  match_not_started: "The match hasn't started yet.",
+  result_too_late: 'Results can only be posted until 24 hours after the match.',
+  result_already_posted: 'Your opponent already posted a result.',
+  invalid_winner: 'The winner must be one of the two players.',
 } satisfies Partial<Record<ServiceErrorCode, string>>;
 
 type ChallengeErrorCode = keyof typeof MESSAGES;
@@ -98,7 +121,6 @@ type ChallengeErrorCode = keyof typeof MESSAGES;
  * The 22023 messages the challenge functions raise, and the code each one means.
  * Copied from the header comments of the challenges and challenge_overlap
  * migrations; keep them in sync.
- * report_result's messages aren't here because nothing in this file calls it.
  */
 const DB_MESSAGES: Record<string, ChallengeErrorCode> = {
   'Player not found.': 'player_not_found',
@@ -116,6 +138,10 @@ const DB_MESSAGES: Record<string, ChallengeErrorCode> = {
   'Challenge expired.': 'challenge_expired',
   'Challenge already answered.': 'challenge_already_answered',
   'Match ended.': 'match_ended',
+  'Match has not started.': 'match_not_started',
+  'Too late to post a result.': 'result_too_late',
+  'Result already posted.': 'result_already_posted',
+  'Winner must be one of the players.': 'invalid_winner',
 };
 
 function serviceError(code: ChallengeErrorCode): ServiceError {
@@ -137,11 +163,7 @@ function fromChallengeError(error: PostgrestError): Error {
 
 // ---------- Rows ----------
 
-/**
- * One challenge_row from Postgres. The result columns (game_id, game_status,
- * winner_id, reported_by) also come back but aren't used yet; add them to
- * Challenge when the Post Result / Confirm screens need them.
- */
+/** One challenge_row from Postgres. The result columns are null until someone reports. */
 interface ChallengeRow {
   challenge_id: number;
   direction: ChallengeDirection;
@@ -156,6 +178,10 @@ interface ChallengeRow {
   starts_at: string;
   duration_minutes: number;
   closed_at: string | null;
+  game_id: number | null;
+  game_status: ChallengeResult['status'] | null;
+  winner_id: string | null;
+  reported_by: string | null;
 }
 
 function toChallenge(row: ChallengeRow): Challenge {
@@ -174,6 +200,19 @@ function toChallenge(row: ChallengeRow): Challenge {
     startsAt: new Date(row.starts_at),
     durationMinutes: row.duration_minutes,
     closedAt: row.closed_at ? new Date(row.closed_at) : null,
+    result: toResult(row),
+  };
+}
+
+function toResult(row: ChallengeRow): ChallengeResult | null {
+  if (row.game_id === null || row.game_status === null || row.winner_id === null || row.reported_by === null) {
+    return null;
+  }
+  return {
+    gameId: row.game_id,
+    status: row.game_status,
+    winnerId: row.winner_id,
+    reportedBy: row.reported_by,
   };
 }
 
@@ -328,4 +367,42 @@ export async function getMatchReadiness(challengeId: number): Promise<MatchReadi
     throw serviceError('challenge_not_found');
   }
   return {youCheckedIn: row.you_checked_in, opponentCheckedIn: row.opponent_checked_in};
+}
+
+/**
+ * Reports who won a confirmed match and returns the new game's id. Either
+ * player can report, from the match's start until 24 hours after its end.
+ *   - Ranked: the result is 'pending' until the other player confirms or
+ *     disputes it (results.ts).
+ *   - Casual: confirmed right away, with no Elo change. (The app doesn't
+ *     offer reporting for casual matches.)
+ *
+ * Fails with:
+ *   - 'challenge_not_found': not the user's match, or not confirmed
+ *   - 'match_not_started' / 'result_too_late'
+ *   - 'result_already_posted': the opponent reported first; load the
+ *     challenge again to see their result
+ *   - 'invalid_winner': winnerId isn't one of the two players
+ */
+export async function reportResult(challengeId: number, winnerId: string): Promise<number> {
+  const {data, error} = await supabase.rpc('report_result', {
+    p_challenge_id: challengeId,
+    p_winner_id: winnerId,
+  });
+  if (error) {
+    throw fromChallengeError(error);
+  }
+  return data as number;
+}
+
+/**
+ * When a result was reported (its games row's created_at), for the
+ * "Auto-confirms in Xh" line. Players can read the games they played in.
+ */
+export async function getResultReportedAt(gameId: number): Promise<Date> {
+  const {data, error} = await supabase.from('games').select('created_at').eq('game_id', gameId).single();
+  if (error) {
+    throw error;
+  }
+  return new Date(data.created_at);
 }

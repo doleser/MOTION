@@ -6,6 +6,7 @@ import {
   getChallenge,
   getChallengeStatus,
   getMatchReadiness,
+  reportResult,
   getPendingChallengeCount,
   listMyChallenges,
 } from './challenges';
@@ -50,6 +51,7 @@ const pendingChallenge = {
   startsAt: new Date('2026-11-21T02:00:00Z'),
   durationMinutes: 60,
   closedAt: null,
+  result: null,
 };
 
 describe('getChallengeStatus', () => {
@@ -262,5 +264,48 @@ describe('getMatchReadiness', () => {
     rpc.mockResolvedValue({data: [], error: null});
 
     await expect(getMatchReadiness(7)).rejects.toMatchObject({code: 'challenge_not_found'});
+  });
+});
+
+describe('result columns', () => {
+  it('maps a reported result onto the challenge', async () => {
+    rpc.mockResolvedValue({
+      data: [{...pendingRow, status: 'confirmed', game_id: 42, game_status: 'pending',
+        winner_id: 'player-2', reported_by: 'player-2'}],
+      error: null,
+    });
+
+    await expect(getChallenge(7)).resolves.toMatchObject({
+      result: {gameId: 42, status: 'pending', winnerId: 'player-2', reportedBy: 'player-2'},
+    });
+  });
+});
+
+describe('reportResult', () => {
+  it('calls report_result and returns the new game id', async () => {
+    rpc.mockResolvedValue({data: 42, error: null});
+
+    await expect(reportResult(7, 'player-2')).resolves.toBe(42);
+    expect(rpc).toHaveBeenCalledWith('report_result', {p_challenge_id: 7, p_winner_id: 'player-2'});
+  });
+
+  it.each([
+    ['Challenge not found.', 'challenge_not_found'],
+    ['Match has not started.', 'match_not_started'],
+    ['Too late to post a result.', 'result_too_late'],
+    ['Result already posted.', 'result_already_posted'],
+    ['Winner must be one of the players.', 'invalid_winner'],
+  ])('maps "%s" to %s', async (message, expected) => {
+    rpc.mockResolvedValue({data: null, error: {code: '22023', message}});
+
+    await expect(reportResult(7, 'player-2')).rejects.toMatchObject({code: expected});
+  });
+
+  it('shows the app message, not the database one', async () => {
+    rpc.mockResolvedValue({data: null, error: {code: '22023', message: 'Result already posted.'}});
+
+    await expect(reportResult(7, 'player-2')).rejects.toMatchObject({
+      message: 'Your opponent already posted a result.',
+    });
   });
 });

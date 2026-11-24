@@ -5,7 +5,13 @@ import {ChallengeRow} from '../../components/ChallengeRow';
 import {ErrorMessage} from '../../components/ErrorMessage';
 import {MotionButton} from '../../components/MotionButton';
 import {ScreenHeader} from '../../components/ScreenHeader';
-import {getDisplayStatus, isCheckInOpen, type InboxSections} from '../../services/challengeStatus';
+import {
+  getDisplayStatus,
+  isCheckInOpen,
+  isResultAwaitingAnswer,
+  isResultAwaitingOpponent,
+  type InboxSections,
+} from '../../services/challengeStatus';
 import type {Challenge} from '../../services/challenges';
 import {colors, sizes, spacing, typography} from '../../theme';
 import {formatMatchTime} from './matchTime';
@@ -134,6 +140,19 @@ function Sections({sections, now, onOpenChallenge}: SectionsProps) {
 
 /** The label on the right of a row, and whether it's yellow. */
 function getRowStatus(challenge: Challenge, now: Date): {label: string; highlight: boolean} {
+  if (isResultAwaitingAnswer(challenge)) {
+    return {label: 'CONFIRM RESULT', highlight: true};
+  }
+  if (isResultAwaitingOpponent(challenge)) {
+    return {label: 'WAITING FOR RESULT', highlight: false};
+  }
+  if (challenge.result?.status === 'confirmed') {
+    const won = challenge.result.winnerId !== challenge.opponent.userId;
+    return {label: won ? 'WON' : 'LOST', highlight: won};
+  }
+  if (challenge.result?.status === 'voided') {
+    return {label: 'DISPUTED', highlight: false};
+  }
   const status = getDisplayStatus(challenge, now);
   if (status === 'pending') {
     return challenge.direction === 'incoming'

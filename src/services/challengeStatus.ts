@@ -28,6 +28,12 @@ export interface ChallengeTiming {
   durationMinutes: number;
   /** When it was declined or cancelled; null otherwise. */
   closedAt: Date | null;
+  /**
+   * The reported result and the other player, if known. Only used to spot a
+   * result waiting for the user's answer (isResultAwaitingAnswer).
+   */
+  result?: {status: 'pending' | 'confirmed' | 'voided'; reportedBy: string} | null;
+  opponent?: {userId: string};
 }
 
 export type InboxSection = 'needs_answer' | 'upcoming' | 'waiting' | 'recent';
@@ -65,6 +71,11 @@ export function isFinished(status: ChallengeDisplayStatus): boolean {
  * its match time (expired), or its end time (ended). Null if not finished.
  */
 export function getFinishedAt(challenge: ChallengeTiming, now: Date): Date | null {
+  // A settled result: finished at the match's end. (The time it was
+  // confirmed isn't loaded; reports open at the start, so this is close.)
+  if (isResultSettled(challenge)) {
+    return getEndTime(challenge);
+  }
   switch (getDisplayStatus(challenge, now)) {
     case 'declined':
     case 'cancelled':
@@ -101,8 +112,49 @@ export function isCheckInOpen(challenge: ChallengeTiming, now: Date): boolean {
   );
 }
 
-/** Which inbox section a challenge goes in, or null once it's hidden. */
+/** True once the result is confirmed or disputed (voided): nothing left to do. */
+export function isResultSettled(challenge: ChallengeTiming): boolean {
+  const status = challenge.result?.status;
+  return status === 'confirmed' || status === 'voided';
+}
+
+/**
+ * True when the user reported a result that is still pending, so they're
+ * waiting for the other player to confirm or dispute it.
+ */
+export function isResultAwaitingOpponent(challenge: ChallengeTiming): boolean {
+  const {result, opponent} = challenge;
+  return result?.status === 'pending' && opponent !== undefined && result.reportedBy !== opponent.userId;
+}
+
+/**
+ * True when the other player reported a result that is still pending, so
+ * the user has to confirm or dispute it.
+ */
+export function isResultAwaitingAnswer(challenge: ChallengeTiming): boolean {
+  const {result, opponent} = challenge;
+  return result?.status === 'pending' && opponent !== undefined && result.reportedBy === opponent.userId;
+}
+
+/**
+ * Which inbox section a challenge goes in, or null once it's hidden. A
+ * reported result decides it first:
+ *   - waiting for the user's answer: NEEDS YOUR ANSWER
+ *   - the user reported, waiting for the other player: WAITING
+ *   - confirmed or disputed: RECENT (hidden RECENT_HOURS after the match's
+ *     end, like an ended match)
+ * The two pending ones aren't hidden while they wait.
+ */
 export function getInboxSection(challenge: ChallengeTiming, now: Date): InboxSection | null {
+  if (isResultAwaitingAnswer(challenge)) {
+    return 'needs_answer';
+  }
+  if (isResultAwaitingOpponent(challenge)) {
+    return 'waiting';
+  }
+  if (isResultSettled(challenge)) {
+    return isHiddenFromInbox(challenge, now) ? null : 'recent';
+  }
   if (isHiddenFromInbox(challenge, now)) {
     return null;
   }
