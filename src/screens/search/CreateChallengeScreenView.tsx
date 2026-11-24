@@ -8,7 +8,7 @@ import {OptionList} from '../../components/OptionList';
 import {PlayerRow} from '../../components/PlayerRow';
 import {SegmentedChoice} from '../../components/SegmentedChoice';
 import {MATCH_LENGTHS, START_STEP_MINUTES} from '../../services/challengeTime';
-import type {EloStakes} from '../../services/challenges';
+import type {EloStakes} from '../../services/results';
 import type {Court} from '../../services/courts';
 import type {PlayerProfile} from '../../services/players';
 import {colors, sizes, spacing, typography} from '../../theme';

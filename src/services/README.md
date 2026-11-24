@@ -53,5 +53,5 @@ Challenges need two real accounts; there's no fake data any more.
    ready for check-in. It's safe to run again.
 3. Or send real ones: one account challenges the other from their profile.
 
-`previewElo` in `challenges.ts` still returns fixed numbers until #106 adds the real
-one to `results.ts`.
+The Elo stakes come from `previewElo` in `results.ts`, which the database works out
+from both players' current ratings.

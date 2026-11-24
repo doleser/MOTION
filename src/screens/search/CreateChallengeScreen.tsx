@@ -11,10 +11,11 @@ import {
   START_STEP_MINUTES,
   toAllowedStart,
 } from '../../services/challengeTime';
-import {createChallenge, previewElo} from '../../services/challenges';
+import {createChallenge} from '../../services/challenges';
 import {listCourts} from '../../services/courts';
 import {getErrorMessage} from '../../services/errors';
 import {getPlayerProfile} from '../../services/players';
+import {previewElo} from '../../services/results';
 import {
   CreateChallengeScreenView,
   type SheetState,
