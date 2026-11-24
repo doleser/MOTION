@@ -180,10 +180,11 @@ begin
     return;
   end if;
 
-  select elo_before, elo_after
+  -- Qualify: elo_before and elo_after are also this function's return columns.
+  select elo_history.elo_before, elo_history.elo_after
     into v_before, v_after
     from public.elo_history
-   where user_id = v_uid
+   where elo_history.user_id = v_uid
      and elo_history.game_id = p_game_id;
 
   return query select p_game_id, v_before, v_after;
