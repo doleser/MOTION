@@ -19,6 +19,8 @@ export const colors = {
   controlBorder: '#777777',
   /** Dividers and map control outlines. Figma: line */
   line: '#444444',
+  /** Your location on the map. Figma: "Your location / Blue basketball" (no variable) */
+  blue: '#3D9BFF',
   /** Map background behind the tiles. Figma: map */
   map: '#191919',
   /**
