@@ -83,6 +83,8 @@ function nearbyRow(overrides: Record<string, unknown> = {}) {
     player_count: 6,
     avg_elo: 900,
     distance_m: 1800,
+    session_live: false,
+    kotc_waiting: 0,
     ...overrides,
   };
 }
@@ -110,8 +112,20 @@ describe('getNearbyCourts', () => {
         avgElo: 900,
         distanceMeters: 1800,
         sessionLive: false,
+        kotcWaiting: 0,
       },
     ]);
+  });
+
+  it('uses the session counts from the database', async () => {
+    rpc.mockResolvedValue({
+      data: [nearbyRow({session_live: true, kotc_waiting: 4})],
+      error: null,
+    });
+
+    const courts = await getNearbyCourts({...UW, radiusMeters: 20000});
+
+    expect(courts[0]).toMatchObject({sessionLive: true, kotcWaiting: 4});
   });
 
   it('passes maxResults through as the limit', async () => {
@@ -158,6 +172,8 @@ function detailsRow(overrides: Record<string, unknown> = {}) {
     lit: false,
     indoor: false,
     hoop_count: 2,
+    session_live: false,
+    kotc_waiting: 0,
     ...overrides,
   };
 }
@@ -316,7 +332,7 @@ describe('subscribeToCourtCounts', () => {
 
 describe('getCourtPreview', () => {
   it('shows a live King of the Court session (Figma: IMA card)', () => {
-    expect(getCourtPreview(6, 12)).toEqual({
+    expect(getCourtPreview(6, 12, {sessionLive: true, kotcWaiting: 2})).toEqual({
       typeLine: 'Indoor · Full court',
       activityLine: '1V1 LIVE · 2 WAITING',
     });

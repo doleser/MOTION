@@ -6,10 +6,8 @@
  * court_functions migration) and subscribeToCourtCounts listens for live counts
  * (needs the court_count_broadcast migration).
  *
- * Still STUBS with fake data until the backend has what they need; screens
- * won't change when they switch over:
- *   - area, accessNote, photoUrl, onTheWay, sessionLive (see COURT_EXTRAS)
- *   - getCourtPreview's activity line
+ * area, accessNote, photoUrl, and onTheWay are still stubs (see COURT_EXTRAS).
+ * sessionLive and kotcWaiting come from nearby_courts and get_court.
  */
 import {ServiceError} from './errors';
 import {supabase} from './supabase';
@@ -39,6 +37,8 @@ export interface CourtPin extends LatLng {
   distanceMeters: number;
   /** A King of the Court session is running there. */
   sessionLive: boolean;
+  /** Players waiting in King of the Court across the court's sessions. */
+  kotcWaiting: number;
 }
 
 /** Everything the Court Details screen shows. */
@@ -63,6 +63,8 @@ export interface CourtDetails extends LatLng {
   /** Players who said they're heading here. */
   onTheWay: number;
   sessionLive: boolean;
+  /** Players waiting in King of the Court across the court's sessions. */
+  kotcWaiting: number;
 }
 
 /** The extra lines on the map's court card. */
@@ -113,33 +115,26 @@ interface CourtExtras {
   area: string | null;
   accessNote: string | null;
   onTheWay: number;
-  sessionLive: boolean;
-  /** Players waiting in the King of the Court queue. */
-  kotcWaiting: number;
   /** Overrides the hoop-count rule when the hoop count is unknown. */
   isFullCourt?: boolean;
 }
 
-// TODO(backend): replace with real columns/tables. The database has no
-// neighborhood, access note, "heading here" claims, or sessions yet, so these
-// are hard-coded for the seed courts.
+// Neighborhood, access note, and "heading here" are not stored on courts yet.
 const COURT_EXTRAS: Readonly<Record<number, CourtExtras>> = {
-  1: {area: 'UW / U DISTRICT', accessNote: null, onTheWay: 1, sessionLive: false, kotcWaiting: 0},
-  2: {area: 'LAURELHURST', accessNote: null, onTheWay: 0, sessionLive: false, kotcWaiting: 0},
-  3: {area: 'RAVENNA', accessNote: null, onTheWay: 2, sessionLive: false, kotcWaiting: 0},
-  4: {area: 'GREEN LAKE', accessNote: null, onTheWay: 0, sessionLive: false, kotcWaiting: 0},
-  5: {area: 'GREEN LAKE', accessNote: null, onTheWay: 0, sessionLive: false, kotcWaiting: 0},
+  1: {area: 'UW / U DISTRICT', accessNote: null, onTheWay: 1},
+  2: {area: 'LAURELHURST', accessNote: null, onTheWay: 0},
+  3: {area: 'RAVENNA', accessNote: null, onTheWay: 2},
+  4: {area: 'GREEN LAKE', accessNote: null, onTheWay: 0},
+  5: {area: 'GREEN LAKE', accessNote: null, onTheWay: 0},
   6: {
     area: 'UW / MONTLAKE',
     accessNote: 'UW access required · Check venue hours',
     onTheWay: 3,
-    sessionLive: true,
-    kotcWaiting: 2,
     isFullCourt: true,
   },
 };
 
-const NO_EXTRAS: CourtExtras = {area: null, accessNote: null, onTheWay: 0, sessionLive: false, kotcWaiting: 0};
+const NO_EXTRAS: CourtExtras = {area: null, accessNote: null, onTheWay: 0};
 
 /**
  * Straight-line distance in meters (haversine). The stub filters with it, and
@@ -169,6 +164,8 @@ interface NearbyCourtRow {
   player_count: number;
   avg_elo: number | null;
   distance_m: number;
+  session_live: boolean;
+  kotc_waiting: number;
 }
 
 interface CourtDetailsRow {
@@ -182,6 +179,8 @@ interface CourtDetailsRow {
   lit: boolean | null;
   indoor: boolean | null;
   hoop_count: number | null;
+  session_live: boolean;
+  kotc_waiting: number;
 }
 
 // ---------- Public API ----------
@@ -230,8 +229,8 @@ export async function getNearbyCourts({
     playerCount: row.player_count,
     avgElo: row.avg_elo,
     distanceMeters: row.distance_m,
-    // TODO(backend): from the sessions table once it exists.
-    sessionLive: (COURT_EXTRAS[row.court_id] ?? NO_EXTRAS).sessionLive,
+    sessionLive: row.session_live,
+    kotcWaiting: row.kotc_waiting,
   }));
 }
 
@@ -266,18 +265,21 @@ export async function getCourt(courtId: number): Promise<CourtDetails> {
     accessNote: extras.accessNote,
     photoUrl: null,
     onTheWay: extras.onTheWay,
-    sessionLive: extras.sessionLive,
+    sessionLive: row.session_live,
+    kotcWaiting: row.kotc_waiting,
   };
 }
 
 /**
  * The court type and activity lines for the map's court card. The live
- * player count comes from the map pin, not from here.
- *
- * TODO(backend): hard-coded from the stub data until courts have these
- * columns and King of the Court sessions exist.
+ * player count, sessionLive, and kotcWaiting come from the court pin.
+ * Indoor / half-court wording still comes from the seed stub.
  */
-export function getCourtPreview(courtId: number, playerCount: number): CourtPreview {
+export function getCourtPreview(
+  courtId: number,
+  playerCount: number,
+  live: {sessionLive: boolean; kotcWaiting: number} = {sessionLive: false, kotcWaiting: 0},
+): CourtPreview {
   const court = STUB_COURTS.find((c) => c.id === courtId);
   const extras = COURT_EXTRAS[courtId] ?? NO_EXTRAS;
 
@@ -293,8 +295,8 @@ export function getCourtPreview(courtId: number, playerCount: number): CourtPrev
   }
 
   let activityLine: string;
-  if (extras.sessionLive) {
-    activityLine = `1V1 LIVE · ${extras.kotcWaiting} WAITING`;
+  if (live.sessionLive) {
+    activityLine = `1V1 LIVE · ${live.kotcWaiting} WAITING`;
   } else if (playerCount > 0) {
     activityLine = 'PICKUP ACTIVE · NO KOTC SESSION';
   } else {

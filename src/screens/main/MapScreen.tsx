@@ -241,7 +241,10 @@ export function MapScreen({navigation}: MapScreenProps<'MapHome'>) {
             <CourtCard
               name={selectedCourt.name}
               playerCount={selectedCourt.playerCount}
-              {...getCourtPreview(selectedCourt.id, selectedCourt.playerCount)}
+              {...getCourtPreview(selectedCourt.id, selectedCourt.playerCount, {
+                sessionLive: selectedCourt.sessionLive,
+                kotcWaiting: selectedCourt.kotcWaiting,
+              })}
               onOpen={openSelectedCourt}
               onClose={() => setSelectedId(null)}
             />

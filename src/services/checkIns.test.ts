@@ -170,6 +170,7 @@ describe('getCourtPlayers', () => {
         {
           user_id: 'player-1',
           username: 'hoopdreams',
+          real_name: 'Jordan Lee',
           elo: 850,
           checked_in_at: '2026-11-03T20:00:00Z',
         },
@@ -181,6 +182,7 @@ describe('getCourtPlayers', () => {
       {
         userId: 'player-1',
         username: 'hoopdreams',
+        realName: 'Jordan Lee',
         elo: 850,
         checkedInAt: '2026-11-03T20:00:00Z',
       },

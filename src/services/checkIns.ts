@@ -20,6 +20,7 @@ export interface CheckIn {
 export interface CourtPlayer {
   userId: string;
   username: string;
+  realName: string | null;
   elo: number;
   checkedInAt: string;
 }
@@ -35,6 +36,7 @@ interface CheckInRow {
 interface CourtPlayerRow {
   user_id: string;
   username: string;
+  real_name: string | null;
   elo: number;
   checked_in_at: string;
 }
@@ -116,8 +118,9 @@ export async function getMyCheckIn(): Promise<CheckIn | null> {
 }
 
 /**
- * Who is checked in at a court. Empty unless the signed-in player is checked
- * in at that same court; blocked players are left out.
+ * Who the signed-in player can see at a court: themself, King of the Court
+ * participants, and a confirmed 1v1 opponent. Empty unless they are checked
+ * in there. Blocked players are left out.
  */
 export async function getCourtPlayers(courtId: number): Promise<CourtPlayer[]> {
   const {data, error} = await supabase.rpc('get_court_players', {
@@ -129,6 +132,7 @@ export async function getCourtPlayers(courtId: number): Promise<CourtPlayer[]> {
   return ((data ?? []) as CourtPlayerRow[]).map((row) => ({
     userId: row.user_id,
     username: row.username,
+    realName: row.real_name,
     elo: row.elo,
     checkedInAt: row.checked_in_at,
   }));
