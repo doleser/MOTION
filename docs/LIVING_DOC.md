@@ -253,16 +253,15 @@ Team check-in, the team result variation, and Use cases 6 and 7 are future featu
 
 ### Extensions/variations of the success scenario
 
-- 7 alternative: The game is inside a session that continues (best of 5, King of the Court) after a game is played. System only records the win/loss and does not show a result card, and elo changes are deferred until the end of the session. End use case.
-- 3 alternative: Reporting player optionally enters the final score. Continue to step 4.
-- 4 alternative: The match is casual. System does not change ELO, and there is no confirmation. Continue to step 8.
+- 7 alternative: The game is King of the Court. The system records that game and applies Elo when it is confirmed. Casual King of the Court still confirms and does not change Elo. End use case.
+- 4 alternative: The match is a casual 1v1. System does not change Elo, and there is no confirmation. Continue to step 8.
 - 3 alternative - Team match. A captain reports the winner, and the opposing captain confirms for the team. Return to step 7.
 - 3 alternative - both actors attempt to report the winner. If consistent, the system confirms. Continue with step 7.
 
 ### Exceptions: failure conditions and scenarios
 
-- 6 - Confirming player does not respond within 24hr. System confirms the reported result automatically. Continue to step 7.
-- 6 - The confirming player disputes the winner or both players attempt to report a different winner. The system voids the match with no elo changes and issues a warning to both players. If this is a player’s 5th warning in the last month, the system blocks them from selecting or playing ranked games for a week. End use case.
+- 6 - The confirming player does not respond. A 1v1 confirms after 24 hours. A King of the Court game confirms after 5 minutes. Continue to step 7.
+- 6 - The confirming player disputes the winner, or both players report a different winner. The system voids the match with no Elo change. A 1v1 dispute warns both players. A player's 5th 1v1 dispute in a month blocks ranked play for a week. A King of the Court dispute does not warn and does not count toward that ban. End use case.
 
 ## Use Case 5: A group runs King of the Court at a court with a queue.
 
@@ -277,44 +276,44 @@ Team check-in, the team result variation, and Use cases 6 and 7 are future featu
 
 ### Triggers
 
-- The session host taps King of the Court at a court
+- A checked-in player taps King of the Court at that court
 
 ### Preconditions
 
 - Players are signed into the app
-- At least two players are at the same court and ready to play
-- No other Motion session is running at that court.
-- Players must be physically at the location to check in, run king of the court, and inspect the queue.
+- The player is checked in at the court
+- A player is in at most one session
 
 ### Postconditions (success scenario)
 
-- The app saves the results of the games, updates players’ win/loss records, and the king of the court is determined.
-- The queue is cleared, and the court status returns to normal.
-- For ranked sessions, Elo change was applied.
+- The court can have several running sessions. Each has the lowest free session number.
+- Each confirmed ranked game has updated Elo, win/loss, and history. Casual games are confirmed and do not change Elo.
+- The session stays up while someone is king, on court, or waiting. It ends when it is empty.
 
 ### List of steps (success scenario)
 
-1. Player selects king of the court on the app and starts a session
-2. System opens the session, shows a join code, and marks the court in progress
-3. Friends join the session, and the system updates the list and queue accordingly
-4. The first two players play a game
-5. Winner reports the win and the loser confirms with one tap
-6. The system records the win/loss, then the winner is deemed the king of the court, with a crown icon and current streak displayed
-7. The winning player stays on the court, and the losing player goes to the back of the queue.
-8. The group repeats steps 4 to 7.
-9. Host ends the session. System shows the final King, top streak, and win/loss table, and saves it to each player's history.
+1. A checked-in player starts a session and becomes king. The host name is display only. There is no join code.
+2. Other checked-in players join the back of that session's queue.
+3. When a spot on court is open, the next waiting player has 2 minutes to tap "I'm here" and step on court. With the crown vacant, the first two waiting players are called together.
+4. The king and the player on court play. If the crown is vacant, the two players on court play.
+5. One player reports the winner. The other confirms.
+6. The system records the game. Ranked Elo moves when the game is confirmed. The winner is king and the streak updates. The loser goes to the back of the queue.
+7. The group repeats steps 3 to 6.
+8. A player leaves, checks out, or misses "I'm here" twice in a row. When the king, the court, and the queue are all empty, the session ends.
 
 ### Extensions/variations of the success scenario
 
-- Additional players or friends want to join in on an in-progress session. They are able to enter the back of the queue to play. Players are also able to leave the queue if they are done playing without affecting the ongoing session.
-- Host hands hosting to another participant before leaving. Return to step 8.
+- Another player joins an in-progress session at the back of the queue. A player can leave without ending the session while someone else remains.
+- The king leaves. The crown is vacant and the queue stays. There is no host transfer.
+- The session is casual. The result still confirms, and Elo does not change.
 
 ### Exceptions: failure conditions and scenarios
 
-- A player leaves, and fewer than 2 players remain. System ends session.
-- A player leaves during a game. System voids the game, and the next player steps in. Return to step 4.
-- A match is not completed so nothing gets recorded, or if players disagree about a result. Then none of the recording happens. The host may void the game.
-- A player cannot check in and join King of the Court if they are far from the location. System displays a message notifying that the user cannot check in and join the queue.
+- The called player misses "I'm here." The first miss sends them to the back. A second miss in a row removes them.
+- The players disagree about the winner. The game is void, Elo does not change, both go to the back, and the crown is vacant. The dispute does not warn either player.
+- The winner has already left when the game confirms. Elo still moves, the loser goes to the back, and the crown stays vacant.
+- A player with a ranked ban cannot start or join a ranked session. They can still play a casual session, and a ban does not remove someone already in a session.
+- A player cannot check in, and so cannot start or join, when they are far from the court.
 
 ## Use Case 6: A group with an open roster slot finds a compatible player so the game stays full
 
@@ -643,7 +642,7 @@ We foresee that the most challenging part about this project is getting everythi
 | Frontend, map (Daniel) | Expo app scaffolded with navigation **(2-4 hours)** | Map renders seeded courts **(2-4 hours)** | Court sheet and check-in screens (Use Case 6) **(3-5 hours)** | Live markers for courts on screen **(3-5 hours)** | Check-in edge states **(4-6 hours)** | Map and court sheet covered by end-to-end tests **(4-6 hours)** | Implement Feedback & Nice-To-Haves via CI/CD **(5-7 hours)** | Final Tests, Debugging, Deployment! **(4-6 hours)** |
 | Frontend, games (Johnny) | Navigation shell **(2 hours) Done** | Auth screens against the auth stub **(2-4 hours) In progress**  | Sign-up flow (Use Case 4) **(4-6 hours)**  | 1v1 challenge and post-result screens (Use Cases 1, 7) **(4-6 hours)** | King of the Court and fill-a-spot screens (Use Cases 3, 2) **(4-6 hours)** | Team match screens (Use Case 5), with end-to-end tests passing **(4-6 hours)** | Implement Feedback & Nice-To-Haves via CI/CD **(6-8 hours hours)** | Final Tests, Debugging, Deployment! **(4-6 hours)** |
 | Backend, contract (Joonho) | Supabase client and generated types **(2 hours) Complete** | Auth complete **(4-6 hours) In Progress** | Challenge and team-match function signatures on main **(2-4 hours)** | Challenge and result functions the screens call **(4-6 hours)** | Team-match functions **(4-6 hours)** | Contract covered by end-to-end tests **(6-8 hours)** | Implement Feedback & Nice-To-Haves via CI/CD **(4-6 hours)** | Final Tests, Debugging, Deployment! **(4-6 hours)** |
-| Backend, live state (Jace) | Function layout for game rules **(2 hours)** | Check-in validation stub **(4 hours)** | Check-in expiry and automatic check-out **(4-6 hours)** | Check-in the app can call: reject a reading outside 150 meters, check out, and close an expired open row **(5 hours)** | Elo and result confirmation **(5 hours)** | King of the Court session and queue **(5 hours)** | Live-state rules covered by tests (4 hours) and Implement Feedback & Nice-To-Haves via CI/CD **(4-6 hours)** | Final Tests, Debugging, Deployment! **(6-8 hours)** |
+| Backend, live state (Jace) | Function layout for game rules **(2 hours)** | Check-in validation stub **(4 hours)** | Check-in expiry and automatic check-out **(4-6 hours)** | Check-in the app can call: reject a reading outside 150 meters, check out, and close an expired open row **(5 hours)** | Elo and result confirmation **(5 hours)** | Full 1v1 game backend **(5 hours)** | King of the Court session and queue, covered by tests **(5 hours)** | Final Tests, Debugging, Deployment! **(6-8 hours)** |
 | PM (Owen) | Tech Stack Finalized **(2-3 hours) Complete** | Set up basic CI **(4-6 hours) Complete** | Add Database to CI, run first tests **(5-7 hours) In Progress** | Write E2E checklist **(4-6 hours)** | Run E2E checklist **(6-8 hours)** | Recruit testers & Prep Usability Protocol **(4-6 hours)** | Run Usability tests & Document Feedback **(6-8 Hours)** | Write README & Prep Demo **(4-6 hours)** |
 | Database (Owen) | Draft Schema **(2-3 hours) Complete** | Write Migrations **(4-6 hours) Complete** | RLS Policies & PostGIS Queries Implemented **(5-7 hours) IP** | Configure Realtime & Review Seed Import **(3-4 hours)** | Fix Database bugs **(3-5 hours)** | Measure Performance against NFR standards **(2-4 hours)** | Migrate Feedback Changes **(3-5 hours)** | Deploy Production Database **(2-4 hours)** |
 
@@ -706,7 +705,7 @@ flowchart LR
     UserAcct["<b>User/account</b><br/>Profiles, appeals"]:::component
     Auth["<b>Supabase Auth</b><br/>Sign-in service"]:::supabase
     Court["<b>Court session</b><br/>Queue, crown"]:::component
-    Rating["<b>Rating</b><br/>Elo, warnings"]:::component
+    Rating["<b>Rating</b><br/>Elo per confirmed game"]:::component
     Checkin["<b>Check-in</b><br/>150 m, 3 h expiry"]:::component
     TeamMatch["<b>Team match</b><br/>Future"]:::future
   end
@@ -731,7 +730,7 @@ flowchart LR
   FDM -->|query rows| DB
   DB -.->|announces change| FDM
   UserAcct -->|sign-in| Auth
-  Court -->|leave/end| Rating
+  Court -->|confirmed game| Rating
   BE ==>|"Check-in, Court session, Rating,<br/>and Auth write their own tables"| DB
   Importer -->|reads| Seattle
   Importer -->|reads| OSM
@@ -795,13 +794,13 @@ flowchart LR
   - **Map data module:** Gets nearby courts including names, status, player counts, and distances. Also receives activity updates so the map stays current.
   - **Court data module:** Gets updates when checkins or sessions change and updates the court info shown on the screen .
   - **Check-in data module:** Sends selected court and user’s location to the Check-in component. Returns the check in status or an error to the screen and sends the user's response to “still here?” back. The data module handles communication, while the Check-in component checks the location and manages check-ins and check-outs.
-  - **Results data module:** Sends the match and winner to Rating. Returns the Elo preview, updated rating, or the voided result and warning to the screen.
+  - **Results data module:** Sends the match and winner to Rating. Returns the Elo preview, the updated rating, or the voided result to the screen.
   - **King of the Court data module:** Sends session request to Court session and returns the player’s place in the queue to the screen. The court session manages the queue, crown, and streak.
   - **Team data module (Future):** Sends the session and requested format to Team match. It returns the new team size or an error if the change is not allowed.
 - **Supabase Auth**: Email, Apple, and Google sign-in. Sits between the frontend and database and provides an API to process and store user authentication info in the database.
 - **Check-in:** Accepts a reading within 150 meters, closes the check-in when a reading is outside that radius, expires a check-in after 3 hours, and asks "Still here?" when readings stop. It stores which court and when, never a coordinate.
-- **Rating:** The only writer of ratings and rating history. It previews and applies Elo when a result is confirmed. A dispute voids the match and writes a warning.
-- **Court session:** Keeps the King of the Court queue, the crown, and the streak. When a player leaves or the session ends, it calls Rating. It does not compute Elo.
+- **Rating:** The only writer of ratings and rating history. It previews and applies Elo when a ranked result is confirmed, including each confirmed ranked King of the Court game. The change is `round(32 * (1 - E))`, where `E = 1 / (1 + 10^((loserElo - winnerElo) / 400))`. An even game is +16 / −16. A casual game does not change Elo. A dispute voids the match. A 1v1 dispute counts toward the ranked ban. A King of the Court dispute does not.
+- **Court session:** Keeps one court's King of the Court sessions, each queue, the crown, and the streak. A session ends when it is empty. It does not compute Elo. Rating runs when a ranked game in the session is confirmed.
 - **Postgres and PostGIS:** Tables, indexes, and row-level security. The `nearby_courts` query answers "what is near me?"
 - **Court importer:** A scheduled job reads Seattle open data and OpenStreetMap and updates the court list. Players can also report a missing or wrong court.
 - **User/account:** Manages profiles, friendships, blocks, reports, challenges, and appeals. Uses Supabase Auth for signing in.
@@ -826,8 +825,8 @@ flowchart LR
 
 ### Rating
 
-- The **results data module** sends a match, a winner, and an optional score to **Rating**. **Rating** answers with a preview of the Elo change, the applied Elo, or a voided match and a warning.
-- **Court session** sends **Rating** the player and the mode when that player leaves, or when the session ends if they are still in it. **Rating** returns the applied Elo. A King of the Court game records the win and loss immediately and does not call **Rating** for that game.
+- The **results data module** sends a match and a winner to **Rating**. **Rating** answers with a preview of the Elo change, the applied Elo, or a voided match.
+- **Court session** calls **Rating** when a ranked King of the Court game is confirmed. Leaving, checking out, or an empty session does not apply Elo. Casual King of the Court confirms and does not change Elo.
 
 ### Court session
 
@@ -835,7 +834,7 @@ flowchart LR
 
 ### Postgres and PostGIS
 
-- The map data module sends a location and a radius to **Postgres** and receives each nearby court's identity, name, status, player count, and distance.
+- The map data module sends a location and a radius to **Postgres** and receives each nearby court's identity, name, status, player count, distance, whether a King of the Court session is live, and how many players are waiting.
 - Any data module asks **Postgres** for rows. **Postgres** returns only the rows that row-level security allows that caller to see.
 - **Postgres** announces a changed check-in or session to the map and court data modules, and those modules replace the marker from the announcement.
 - **Check-in**, **Rating**, and **Court session** each write only their own tables in **Postgres**.
@@ -850,13 +849,13 @@ flowchart LR
 
 ## Data storage
 
-- **Overview.** MOTION stores user accounts and profiles, basketball courts and their features, check-ins, social links (friends, blocks, reports), challenges, sessions, games, appeals, warnings, and Elo history. Our expected scale is about 100 courts and tens of users. Tens of users is a rough estimate for testing and early use. We’re starting small with a focus on people around UW, then plan to grow within Seattle.
+- **Overview.** MOTION stores user accounts and profiles, basketball courts and their features, check-ins, social links (friends, blocks, reports), challenges, sessions, games, appeals, and Elo history. A disputed game is recorded on the game, and a ranked ban is recorded on the profile. Our expected scale is about 100 courts and tens of users. Tens of users is a rough estimate for testing and early use. We’re starting small with a focus on people around UW, then plan to grow within Seattle.
 
 ### Storage approach:
 
 - One Supabase Postgres database with the PostGIS extension. Accounts are managed by Supabase Auth, each account has one **profiles** row.
 - Courts are seeded and refreshed weekly from OpenStreetMap and Seattle Parks data by the Court importer, which is safe to re-run and won’t overwrite a manual correction to court data
-- Check-ins, sessions, games, appeals, warnings, and Elo are written by the server. Profiles, friendships, blocks, reports, and challenges are written by users, restricted by RLS.
+- Check-ins, sessions, games, appeals, and Elo are written by the server. Profiles, friendships, blocks, reports, and challenges are written by users, restricted by RLS.
 
 ### Court data
 
@@ -868,24 +867,23 @@ Court locations and details come from four sources, seeded before launch and cor
 
 ### Schema:
 
-The MVP uses 1v1 king of the Court sessions. Team mode and team size options are reserved for later.
+The MVP uses King of the Court sessions. A court can run several at once. Team mode and team size options are reserved for later.
 
 | **Table** | **Key columns** | **Purpose** |
 | --- | --- | --- |
-| **profiles** | user_id PK → auth.users, username UNIQUE, elo (default 1200), open_to_challenges | App data for each account, including the current Elo rating. |
+| **profiles** | user_id PK → auth.users, username UNIQUE, elo (default 1200), open_to_challenges, ranked_banned_until | App data for each account, including the current Elo rating and a ranked-play ban. |
 | **courts** | court_id PK, name, location (PostGIS point), lit, indoor, hoop_count, surface, status, source + source_ref UNIQUE, manually_edited | One row per court with its features. source records which dataset it came from; manually_edited stops the importer from overwriting a correction. |
 | **check_ins** | user_id → profiles, court_id → courts, expires_at, checked_out_at | One row per visit. Active while checked_out_at is null and expires_at (3 h) hasn't passed. |
 | **friendships** | PK(requester_id, addressee_id) → profiles, status | Friend requests and accepted friendships, one row per pair. |
 | **blocks** | PK(blocker_id, blocked_id) → profiles | Users a player has blocked; hides each from the other. |
 | **reports** | reporter_id, reported_id → profiles, reason | Reports of a player, kept for review. |
 | **challenges** | challenger_id, opponent_id → profiles, court_id → courts, scheduled_at, ranked, status | A proposed 1v1 game and its response. |
-| **sessions** | court_id → courts, host_id → profiles, type ('koc', 'team'), ranked, team_size, started_at, ended_at | A King of the Court or team-match session at a court. |
-| **session_players** | PK(session_id, user_id), queued_at, left_at | Players in a session; KOC queue order is queued_at. |
-| **games** | court_id → courts, session_id (nullable), challenge_id (nullable, UNIQUE), ranked, status, winning_side, reported_by → profiles | One played game, from a challenge or a session; pending until the other side confirms. |
+| **sessions** | court_id → courts, session_number, host_id → profiles, ranked, king_id → profiles, king_streak, ended_at | One running King of the Court session. Several may share a court. session_number is the lowest free number at that court. The host name is display only. |
+| **session_players** | PK(session_id, user_id), state, queue_position, here_deadline, missed_here_count, left_at, left_reason | Players in a session. queue_position is the line order. A player has one active session. |
+| **games** | court_id → courts, session_id (nullable) → sessions, challenge_id (nullable, UNIQUE), ranked, status, winning_side, reported_by → profiles, disputed_at | One played game, from a challenge or a King of the Court session. Pending until the other side confirms. The result is who won. |
 | **game_players** | PK(game_id, user_id), side | Who played in each game and on which side. |
 | **appeals** | game_id → games, appellant_id → profiles, requested_outcome, status | Appeals of a finalized result,  time-outs are counted from rejected appeals. |
-| **warnings** | user_id → profiles, game_id → games | Issued when a disputed result is voided; the ranked ban counts the last month's rows. |
-| **elo_history** | history_id PK, user_id → profiles, game_id (nullable), session_id (nullable), elo_before, elo_after | Each rating change and the game or KOC session that caused it. |
+| **elo_history** | history_id PK, user_id → profiles, game_id, elo_before, elo_after | Each rating change and the game that caused it. |
 
 ## Assumptions
 
@@ -974,14 +972,13 @@ We plan to organize the backend into the following folders:
 
 ### Court session
 
-Planned split: `courtInfo/` also manages queue order, the crown, the streak, and session start/end. Check-in handles attendance. These folders group the Postgres functions in Supabase.
+### Court session
 
-- `courtInfo/`: Contains logic updating the **courts** table, keeping track of each court’s occupancy, game type, and allowing users to join a court session
-- `games/`: Contains logic for keeping track of ongoing games, as well as logging the results of previous games. Provides frontend with information regarding games in progress or in the matchmaking phase, and stores results.
+King of the Court queue order, the crown, the streak, and "I'm here" are Postgres functions. Several sessions can run at one court. A session ends when nobody is left. Checking out removes the player from the session. Check-in handles attendance.
 
 ### Rating
 
-- `eloCalculator/`: Contains logic for calculating elo gain/loss for games as well as tracking a log of elo history, updating the **elo_history** table. Provides frontend with a player’s elo, and updates Elo on the server.
+- `eloCalculator/`: Elo for a confirmed ranked game is `round(32 * (1 - E))`, where `E = 1 / (1 + 10^((loserElo - winnerElo) / 400))`. An even game is +16 / −16. The same function writes `profiles.elo` and `elo_history`. A King of the Court game uses it when that game is confirmed, not when the player leaves or the session ends. Casual games do not change Elo.
 
 ### Supabase Auth
 
@@ -1019,20 +1016,21 @@ Tables are described in Data storage (Section 7). This is the code for reading a
 
 - RLS policies: Decide which rows each caller sees: player names at a court only for players checked in there; blocks hide users from each other
 
-- `nearby_courts(lat, lng, radius)`: Return nearby courts with status, active player count, and distance.
+- `nearby_courts(lat, lng, radius)`: Return nearby courts with status, active player count, distance, whether a King of the Court session is live, and how many players are waiting. The waiting count has no names.
 
-- Realtime on check_ins, sessions, session_players: Announce changes to the map and court screens subscribed to them.
+- Realtime on check-ins, plus a `kotc:<court_id>` broadcast when a session changes. Checked-in players can read that broadcast. Clients cannot send it.
 
 #### Indexes and constraints
 
-Indexes on court locations serve nearby search (Sec 4). Constraints keep an open check-in per user, one active session per court, at most one Elo change per player for a game session.
+Indexes on court locations serve nearby search (Sec 4). Constraints keep one open check-in per user, many running King of the Court sessions per court, one active session per player, and at most one Elo change per player per game.
 
 #### Design decisions:
 
 - Live counts are derived instead of stored. A court's count is a query over active check-ins, and expiry is checked at query time.
-- Current Elo is on **profiles**; history is in **elo_history**. Rating writes both in one transaction. A 1v1 change points to its game; a KOC change points to its session.
-- A challenge and a game are separate,  **games.challenge_id** is the link.
-- KOC queue order is **queued_at**. A loser's **queued_at** resets to now, sending them to the back without renumbering anyone.
+- Current Elo is on **profiles**; history is in **elo_history**. Rating writes both in one transaction. A 1v1 change and a King of the Court change both point at the game.
+- A challenge and a game are separate,  **games.challenge_id** is the link. **games.session_id** links a King of the Court game.
+- King of the Court queue order is **queue_position**. A player sent to the back gets a new position. Many sessions may run at one court. A player is in at most one active session.
+- A ranked ban is **profiles.ranked_banned_until**. A voided dispute is **games.disputed_at**. There is no warnings table. A King of the Court dispute does not move the ban.
 - **Game_players** with a **side** column covers 1v1, KOC, and team games. Elo stays per player.
 - Team-game support is for later
 - History is kept: Check-ins, games, and appeals are not deleted; a voided game keeps **‘status = voided’**.
@@ -1053,7 +1051,7 @@ We ran two usability tests on signup and finding a court. After the first test w
 
 We test rating changes, court counts, check-in privacy, and new user journeys.
 
-- **Unit tests:** pgTAP checks each RLS policy with two test accounts (one checked in, one not), including that names stay hidden until check-in. Jest tests each `services/` module with Supabase, including invalid usernames. pgTAP also rejects a check-in from 200 meters away. To be implemented: reject a ranked Elo gap over 150, a void leaves `profiles.elo` unchanged, and `confirm_result` writes `profiles.elo` and `elo_history` together.
+- **Unit tests:** pgTAP checks each RLS policy with two test accounts (one checked in, one not), including that names stay hidden until check-in. Jest tests each `services/` module with Supabase, including invalid usernames. pgTAP also rejects a check-in from 200 meters away. A void leaves `profiles.elo` unchanged, and `confirm_result` writes `profiles.elo` and `elo_history` together. King of the Court queue order, "I'm here", the 5-minute confirm, and a dispute that does not ban are in `supabase/tests/database/kotc.test.sql`. To be implemented: reject a ranked Elo gap over 150.
 - **Integration:** GitHub Actions runs that pgTAP suite on a local Supabase with the migrations and seed. CI applies every migration to an empty database on each pull request. It also times `nearby_courts` with 500 courts and 300 live check-ins, and fails if the slowest of 20 calls takes 1 second or more (Section 4). Locally on Nov 19 the slowest calls took 14 ms (5 km, 10 courts) and 2 ms (50 km, 200 courts), and the query plan uses the GiST index on `courts.location`. CI does not run a simulator. A separate check, not in CI, uses one simulator and one emulator to confirm a check-in appears on the second phone within 5 seconds (Section 4).
 - **Usability:** Ten outsiders, with no walkthrough, sign up, find a court, check in, send a challenge, and find block and report (Section 4). We record where they stop, change the design, and rerun those tasks.
 - **Bugs:** Each failure in testing or use is a GitHub Issue with the screen, account, and server response.
