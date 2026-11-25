@@ -7,6 +7,7 @@ import {
   getChallengeStatus,
   getMatchReadiness,
   reportResult,
+  startMatch,
   getPendingChallengeCount,
   listMyChallenges,
 } from './challenges';
@@ -39,6 +40,7 @@ const pendingRow = {
   game_status: null,
   winner_id: null,
   reported_by: null,
+  started_at: null,
 };
 
 const pendingChallenge = {
@@ -51,6 +53,7 @@ const pendingChallenge = {
   startsAt: new Date('2026-11-21T02:00:00Z'),
   durationMinutes: 60,
   closedAt: null,
+  startedAt: null,
   result: null,
 };
 
@@ -224,6 +227,7 @@ describe.each([
     ['Match ended.', 'match_ended'],
     ['You already have a match at that time.', 'challenger_busy'],
     ['Time no longer available.', 'time_unavailable'],
+    ['Match already started.', 'match_already_started'],
   ])('maps "%s" to %s', async (message, expected) => {
     rpc.mockResolvedValue({data: null, error: {code: '22023', message}});
 
@@ -278,6 +282,42 @@ describe('result columns', () => {
     await expect(getChallenge(7)).resolves.toMatchObject({
       result: {gameId: 42, status: 'pending', winnerId: 'player-2', reportedBy: 'player-2'},
     });
+  });
+});
+
+describe('startMatch', () => {
+  it('calls start_match and returns the match with startedAt', async () => {
+    rpc.mockResolvedValue({
+      data: [{...pendingRow, status: 'confirmed', started_at: '2026-11-21T01:40:00+00:00'}],
+      error: null,
+    });
+
+    await expect(startMatch(7)).resolves.toEqual({
+      ...pendingChallenge,
+      status: 'confirmed',
+      startedAt: new Date('2026-11-21T01:40:00Z'),
+    });
+    expect(rpc).toHaveBeenCalledWith('start_match', {p_challenge_id: 7});
+  });
+
+  it.each([
+    ['Challenge not found.', 'challenge_not_found', "We couldn't find that challenge."],
+    ['Match already started.', 'match_already_started', 'This match has already started.'],
+    ['Match ended.', 'match_ended', 'This match has already ended.'],
+    ['Check-in is not open.', 'check_in_not_open', "Check-in for this match isn't open yet."],
+    ['Both players must be checked in.', 'players_not_checked_in', 'You both need to be checked in at the court.'],
+    ['You have another match right now.', 'other_match_in_progress', 'You have another match right now.'],
+    ['Time no longer available.', 'time_unavailable', "This time isn't available anymore."],
+  ])('maps "%s" to %s', async (dbMessage, expected, appMessage) => {
+    rpc.mockResolvedValue({data: null, error: {code: '22023', message: dbMessage}});
+
+    await expect(startMatch(7)).rejects.toMatchObject({code: expected, message: appMessage});
+  });
+
+  it('maps "Not signed in." to not_signed_in', async () => {
+    rpc.mockResolvedValue({data: null, error: {code: '42501', message: 'Not signed in.'}});
+
+    await expect(startMatch(7)).rejects.toMatchObject({code: 'not_signed_in'});
   });
 });
 

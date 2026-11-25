@@ -77,6 +77,9 @@ select v.id, v.challenger, v.opponent,
           false, interval '0',         30, 'pending',   null)
   ) as v (id, challenger, opponent, ranked, starts_in, minutes, status, closed_in);
 
+-- report_result needs a started match: 904, 905, and 906 were started on time.
+update public.challenges set started_at = starts_at where challenge_id in (904, 905, 906);
+
 -- Bob is checked in at Denny; Alice isn't.
 insert into public.check_ins (user_id, court_id) values
   ('22222222-2222-2222-2222-222222222222',

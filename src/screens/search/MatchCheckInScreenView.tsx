@@ -6,7 +6,7 @@ import {MotionButton} from '../../components/MotionButton';
 import {PlayerRow} from '../../components/PlayerRow';
 import {ScreenHeader} from '../../components/ScreenHeader';
 import {colors, sizes, spacing, typography} from '../../theme';
-import type {MatchAction} from './matchResult';
+import {getStartOpensAt, type MatchAction} from './matchResult';
 import {formatClockTime, formatMatchTime} from './matchTime';
 
 /** The accepted match, as this screen shows it. */
@@ -53,6 +53,8 @@ export type MatchCheckInState =
       /** The signed-in user is checked in at the match's court. */
       youCheckedIn: boolean;
       opponent: OpponentStatus;
+      /** A player tapped Start Match (it may be before the scheduled start). */
+      started: boolean;
       /** The main button (getMatchAction in matchResult.ts). */
       action: MatchAction;
     };
@@ -62,7 +64,13 @@ interface MatchCheckInScreenViewProps {
   onBack: () => void;
   onRetry: () => void;
   onCheckIn: () => void;
-  /** START MATCH, REPORT RESULT, and VIEW RESULT: open the result screen. */
+  /** START MATCH: starts the match for both players. */
+  onStartMatch: () => void;
+  /** Start Match is sending: the button spins and can't be tapped again. */
+  starting: boolean;
+  /** Why Start Match failed, shown above the button; null if it didn't. */
+  actionError: string | null;
+  /** REPORT RESULT and VIEW RESULT: open the result screen. */
   onOpenResult: () => void;
 }
 
@@ -80,13 +88,24 @@ export function MatchCheckInScreenView({
   onBack,
   onRetry,
   onCheckIn,
+  onStartMatch,
+  starting,
+  actionError,
   onOpenResult,
 }: MatchCheckInScreenViewProps) {
   return (
     // Bottom edge left out: the tab bar already sits above the home bar.
     <SafeAreaView style={styles.screen} edges={['top']}>
       <ScreenHeader title="DIRECT 1V1 / ACCEPTED" onBack={onBack} />
-      <Body state={state} onRetry={onRetry} onCheckIn={onCheckIn} onOpenResult={onOpenResult} />
+      <Body
+        state={state}
+        onRetry={onRetry}
+        onCheckIn={onCheckIn}
+        onStartMatch={onStartMatch}
+        starting={starting}
+        actionError={actionError}
+        onOpenResult={onOpenResult}
+      />
     </SafeAreaView>
   );
 }
@@ -95,10 +114,13 @@ interface BodyProps {
   state: MatchCheckInState;
   onRetry: () => void;
   onCheckIn: () => void;
+  onStartMatch: () => void;
+  starting: boolean;
+  actionError: string | null;
   onOpenResult: () => void;
 }
 
-function Body({state, onRetry, onCheckIn, onOpenResult}: BodyProps) {
+function Body({state, onRetry, onCheckIn, onStartMatch, starting, actionError, onOpenResult}: BodyProps) {
   if (state.kind === 'loading') {
     return (
       <View style={styles.centered}>
@@ -116,7 +138,7 @@ function Body({state, onRetry, onCheckIn, onOpenResult}: BodyProps) {
     );
   }
 
-  const {match, timing, youCheckedIn, opponent, action} = state;
+  const {match, timing, youCheckedIn, opponent, started, action} = state;
   const opponentReady = opponent === 'ready';
   const ended = timing === 'ended';
   const casualReady = action === 'casual_ready';
@@ -126,12 +148,14 @@ function Body({state, onRetry, onCheckIn, onOpenResult}: BodyProps) {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
         <Text style={styles.eyebrow}>INVITATION ACCEPTED</Text>
         <Text accessibilityRole="header" style={styles.title}>
-          {ended ? 'MATCH TIME HAS PASSED.' : 'SEE YOU ON COURT.'}
+          {ended ? 'MATCH TIME HAS PASSED.' : started ? 'MATCH STARTED.' : 'SEE YOU ON COURT.'}
         </Text>
         <Text style={styles.body}>
           {ended
             ? `This match ended ${formatEnd(match)}.`
-            : 'Your matchup is saved. Both players check in at the meeting court before play.'}
+            : started
+              ? 'Report who won when you finish.'
+              : 'Your matchup is saved. Both players check in at the meeting court before play.'}
         </Text>
 
         <PlayerRow
@@ -151,7 +175,8 @@ function Body({state, onRetry, onCheckIn, onOpenResult}: BodyProps) {
           </View>
         </View>
 
-        {ended ? null : (
+        {/* Who's checked in only matters until the match starts. */}
+        {ended || started ? null : (
           <>
             <View style={styles.readiness}>
               <StatusLine who="YOU" status={youCheckedIn ? 'CHECKED IN' : 'NOT CHECKED IN'} done={youCheckedIn} />
@@ -180,11 +205,14 @@ function Body({state, onRetry, onCheckIn, onOpenResult}: BodyProps) {
       {hasButton(action) ? (
         // Pinned above the tab bar (Figma); the content scrolls behind it.
         <View style={styles.footer}>
+          {actionError ? <ErrorMessage message={actionError} /> : null}
           <MainButton
             action={action}
             opponentFirstName={firstName(match.opponent.realName)}
             startsAt={match.startsAt}
             onCheckIn={onCheckIn}
+            onStartMatch={onStartMatch}
+            starting={starting}
             onOpenResult={onOpenResult}
           />
         </View>
@@ -224,15 +252,25 @@ interface MainButtonProps {
   opponentFirstName: string;
   startsAt: Date;
   onCheckIn: () => void;
+  onStartMatch: () => void;
+  starting: boolean;
   onOpenResult: () => void;
 }
 
 /**
- * The pinned button: check in, wait for the opponent and the start, then
- * start; after the match, report or view the result. The waiting versions
+ * The pinned button: check in, wait for the opponent and for check-in to
+ * open, then start; once started, report or view the result. The waiting versions
  * are greyed out in the same spot, so the bottom of the screen doesn't jump.
  */
-function MainButton({action, opponentFirstName, startsAt, onCheckIn, onOpenResult}: MainButtonProps) {
+function MainButton({
+  action,
+  opponentFirstName,
+  startsAt,
+  onCheckIn,
+  onStartMatch,
+  starting,
+  onOpenResult,
+}: MainButtonProps) {
   switch (action) {
     case 'check_in':
       return <MotionButton label="CHECK IN AT MEETING COURT" onPress={onCheckIn} />;
@@ -248,14 +286,15 @@ function MainButton({action, opponentFirstName, startsAt, onCheckIn, onOpenResul
     case 'waiting_for_start':
       return (
         <MotionButton
-          label={`STARTS AT ${formatClockTime(startsAt).toUpperCase()}`}
+          // Start Match opens with check-in, 30 minutes before the start.
+          label={`CAN START AT ${formatClockTime(getStartOpensAt(startsAt)).toUpperCase()}`}
           variant="secondary"
           disabled
           onPress={onOpenResult}
         />
       );
     case 'start_match':
-      return <MotionButton label="START MATCH" onPress={onOpenResult} />;
+      return <MotionButton label="START MATCH" onPress={onStartMatch} loading={starting} disabled={starting} />;
     case 'report_result':
       return <MotionButton label="REPORT RESULT" onPress={onOpenResult} />;
     case 'view_result':
@@ -369,5 +408,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.screen,
     paddingTop: spacing.lg,
     paddingBottom: spacing.xl,
+    // Between the Start Match error and the button.
+    gap: spacing.md,
   },
 });

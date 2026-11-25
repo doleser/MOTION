@@ -36,6 +36,11 @@ export type ServiceErrorCode =
   | 'challenge_expired'
   | 'challenge_already_answered'
   | 'match_ended'
+  // Starting a 1v1 match (challenges.ts startMatch)
+  | 'match_already_started'
+  | 'check_in_not_open'
+  | 'players_not_checked_in'
+  | 'other_match_in_progress'
   // Reporting a 1v1 result (challenges.ts reportResult)
   | 'match_not_started'
   | 'result_too_late'

@@ -12,6 +12,8 @@
  *     accept_challenge / decline_challenge / cancel_challenge(p_challenge_id)
  *   - getPendingChallengeCount → pending_challenge_count()
  *   - getMatchReadiness → match_readiness(p_challenge_id)
+ *   - startMatch → start_match(p_challenge_id)
+ *     (20261125032337_early_match_start.sql)
  *   - reportResult → report_result(p_challenge_id, p_winner_id)
  *
  * The rules (who can be challenged, overlaps, cooldowns, expiry) are enforced in
@@ -68,6 +70,11 @@ export interface Challenge {
   durationMinutes: number;
   /** When it was declined or cancelled; null otherwise. */
   closedAt: Date | null;
+  /**
+   * When a player tapped Start Match; null until then. Can be before
+   * startsAt. The match still ends at startsAt + durationMinutes.
+   */
+  startedAt: Date | null;
   /** The reported result, or null if no one has reported one yet. */
   result: ChallengeResult | null;
 }
@@ -109,6 +116,10 @@ const MESSAGES = {
   challenge_expired: 'This challenge has expired.',
   challenge_already_answered: 'This challenge has already been answered.',
   match_ended: 'This match has already ended.',
+  match_already_started: 'This match has already started.',
+  check_in_not_open: "Check-in for this match isn't open yet.",
+  players_not_checked_in: 'You both need to be checked in at the court.',
+  other_match_in_progress: 'You have another match right now.',
   match_not_started: "The match hasn't started yet.",
   result_too_late: 'Results can only be posted until 24 hours after the match.',
   result_already_posted: 'Your opponent already posted a result.',
@@ -119,8 +130,8 @@ type ChallengeErrorCode = keyof typeof MESSAGES;
 
 /**
  * The 22023 messages the challenge functions raise, and the code each one means.
- * Copied from the header comments of the challenges and challenge_overlap
- * migrations; keep them in sync.
+ * Copied from the header comments of the challenges, challenge_overlap, and
+ * early_match_start migrations; keep them in sync.
  */
 const DB_MESSAGES: Record<string, ChallengeErrorCode> = {
   'Player not found.': 'player_not_found',
@@ -138,6 +149,10 @@ const DB_MESSAGES: Record<string, ChallengeErrorCode> = {
   'Challenge expired.': 'challenge_expired',
   'Challenge already answered.': 'challenge_already_answered',
   'Match ended.': 'match_ended',
+  'Match already started.': 'match_already_started',
+  'Check-in is not open.': 'check_in_not_open',
+  'Both players must be checked in.': 'players_not_checked_in',
+  'You have another match right now.': 'other_match_in_progress',
   'Match has not started.': 'match_not_started',
   'Too late to post a result.': 'result_too_late',
   'Result already posted.': 'result_already_posted',
@@ -182,6 +197,7 @@ interface ChallengeRow {
   game_status: ChallengeResult['status'] | null;
   winner_id: string | null;
   reported_by: string | null;
+  started_at: string | null;
 }
 
 function toChallenge(row: ChallengeRow): Challenge {
@@ -200,6 +216,7 @@ function toChallenge(row: ChallengeRow): Challenge {
     startsAt: new Date(row.starts_at),
     durationMinutes: row.duration_minutes,
     closedAt: row.closed_at ? new Date(row.closed_at) : null,
+    startedAt: row.started_at ? new Date(row.started_at) : null,
     result: toResult(row),
   };
 }
@@ -328,6 +345,7 @@ export async function declineChallenge(challengeId: number): Promise<Challenge> 
  *   - 'challenge_expired' / 'challenge_already_answered': a sent challenge
  *     that's no longer pending
  *   - 'match_ended': a confirmed match that's over or has a posted result
+ *   - 'match_already_started': someone tapped Start Match
  */
 export async function cancelChallenge(challengeId: number): Promise<Challenge> {
   return callForOne('cancel_challenge', challengeId);
@@ -370,8 +388,27 @@ export async function getMatchReadiness(challengeId: number): Promise<MatchReadi
 }
 
 /**
+ * Starts a confirmed match for both players (Start Match), and returns it with
+ * startedAt set. Allowed from 30 minutes before the start until the scheduled
+ * end, once both players are checked in at the court. Starting early doesn't
+ * move the end. Fails with:
+ *   - 'challenge_not_found': not the user's match, or not confirmed
+ *   - 'match_already_started': the opponent (or the user) already started it
+ *   - 'match_ended': past the scheduled end
+ *   - 'check_in_not_open': more than 30 minutes before the start
+ *   - 'players_not_checked_in': one of them isn't checked in at the court
+ *   - 'other_match_in_progress': the user is in another started match
+ *   - 'time_unavailable': the opponent is in another started match (vague on
+ *     purpose)
+ */
+export async function startMatch(challengeId: number): Promise<Challenge> {
+  return callForOne('start_match', challengeId);
+}
+
+/**
  * Reports who won a confirmed match and returns the new game's id. Either
- * player can report, from the match's start until 24 hours after its end.
+ * player can report once the match was started (startMatch) until 24 hours
+ * after its scheduled end.
  *   - Ranked: the result is 'pending' until the other player confirms or
  *     disputes it (results.ts).
  *   - Casual: confirmed right away, with no Elo change. (The app doesn't

@@ -172,13 +172,16 @@ function Buttons({
         ) : (
           <Text style={styles.body}>Check-in opens at {state.checkInOpensAt}.</Text>
         )}
-        <MotionButton
-          label="CANCEL MATCH"
-          variant="secondary"
-          onPress={onCancel}
-          loading={busyAction === 'cancel'}
-          disabled={isBusy}
-        />
+        {/* A started match can't be cancelled (cancel_challenge refuses it). */}
+        {challenge.startedAt === null ? (
+          <MotionButton
+            label="CANCEL MATCH"
+            variant="secondary"
+            onPress={onCancel}
+            loading={busyAction === 'cancel'}
+            disabled={isBusy}
+          />
+        ) : null}
       </>
     );
   }

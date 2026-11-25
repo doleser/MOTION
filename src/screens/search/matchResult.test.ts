@@ -1,5 +1,6 @@
 import type {ChallengeResult} from '../../services/challenges';
 import {
+  canStartMatch,
   formatAutoConfirm,
   formatEloDelta,
   getAutoConfirmAt,
@@ -65,6 +66,42 @@ describe('formatEloDelta', () => {
   });
 });
 
+describe('canStartMatch', () => {
+  const startsAt = new Date('2026-11-22T18:00:00Z');
+  const minutes = (m: number) => new Date(startsAt.getTime() + m * 60 * 1000);
+  const match = (changes: Partial<MatchActionInput> = {}) => ({
+    startsAt,
+    durationMinutes: 60,
+    startedAt: null,
+    youCheckedIn: true,
+    opponentReady: true,
+    ...changes,
+  });
+
+  it('allows starting early once both are checked in and check-in is open', () => {
+    expect(canStartMatch(match(), minutes(-30))).toBe(true);
+    expect(canStartMatch(match(), minutes(-20))).toBe(true);
+    expect(canStartMatch(match(), minutes(59))).toBe(true);
+  });
+
+  it('needs both players checked in', () => {
+    expect(canStartMatch(match({youCheckedIn: false}), minutes(-20))).toBe(false);
+    expect(canStartMatch(match({opponentReady: false}), minutes(-20))).toBe(false);
+  });
+
+  it('waits until check-in opens, 30 minutes before the start', () => {
+    expect(canStartMatch(match(), minutes(-31))).toBe(false);
+  });
+
+  it('is closed once the match has started', () => {
+    expect(canStartMatch(match({startedAt: minutes(-20)}), minutes(-10))).toBe(false);
+  });
+
+  it('is closed at the scheduled end', () => {
+    expect(canStartMatch(match(), minutes(60))).toBe(false);
+  });
+});
+
 describe('getMatchAction', () => {
   const startsAt = new Date('2026-11-22T18:00:00Z');
   const minutes = (m: number) => new Date(startsAt.getTime() + m * 60 * 1000);
@@ -73,6 +110,7 @@ describe('getMatchAction', () => {
     hasResult: false,
     startsAt,
     durationMinutes: 60,
+    startedAt: null,
     youCheckedIn: true,
     opponentReady: true,
     ...changes,
@@ -86,12 +124,13 @@ describe('getMatchAction', () => {
     expect(getMatchAction(match({opponentReady: false}), minutes(5))).toBe('waiting_for_opponent');
   });
 
-  it('waits for the start time when both are here early', () => {
-    expect(getMatchAction(match(), minutes(-1))).toBe('waiting_for_start');
+  it('waits for check-in to open when both are here more than 30 minutes early', () => {
+    expect(getMatchAction(match(), minutes(-31))).toBe('waiting_for_start');
   });
 
-  it('starts a ranked match from the start time', () => {
-    expect(getMatchAction(match(), minutes(0))).toBe('start_match');
+  it('offers START MATCH early, from 30 minutes before the start until the end', () => {
+    expect(getMatchAction(match(), minutes(-30))).toBe('start_match');
+    expect(getMatchAction(match(), minutes(-20))).toBe('start_match');
     expect(getMatchAction(match(), minutes(59))).toBe('start_match');
   });
 
@@ -100,11 +139,20 @@ describe('getMatchAction', () => {
     expect(getMatchAction(match({ranked: false}), minutes(10))).toBe('casual_ready');
   });
 
-  it('offers REPORT RESULT after a ranked match, without check-in, for 24 hours', () => {
-    const away = match({youCheckedIn: false, opponentReady: false});
+  it('offers REPORT RESULT as soon as the match starts, even before the scheduled time', () => {
+    expect(getMatchAction(match({startedAt: minutes(-20)}), minutes(-19))).toBe('report_result');
+  });
+
+  it('keeps REPORT RESULT for a started match until 24 hours after the scheduled end, without check-in', () => {
+    const away = match({startedAt: minutes(-20), youCheckedIn: false, opponentReady: false});
     expect(getMatchAction(away, minutes(60))).toBe('report_result');
     expect(getMatchAction(away, minutes(60 + 24 * 60))).toBe('report_result');
     expect(getMatchAction(away, minutes(60 + 24 * 60 + 1))).toBe('none');
+  });
+
+  it('has nothing to report for a match nobody started, once it has ended', () => {
+    expect(getMatchAction(match(), minutes(60))).toBe('none');
+    expect(getMatchAction(match({youCheckedIn: false, opponentReady: false}), minutes(90))).toBe('none');
   });
 
   it('has nothing to do after a casual match', () => {

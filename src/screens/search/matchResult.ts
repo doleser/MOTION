@@ -3,6 +3,7 @@
  * they're easy to test.
  */
 import type {ChallengeResult} from '../../services/challenges';
+import {CHECK_IN_OPENS_MINUTES_BEFORE} from '../../services/challengeStatus';
 
 /**
  * Which result view a player sees:
@@ -52,19 +53,57 @@ export function formatAutoConfirm(reportedAt: Date, now: Date): string {
 /** report_result accepts a result until this long after the match ends. */
 export const REPORT_WINDOW_HOURS = 24;
 
+const MINUTE_MS = 60 * 1000;
+
+/** What decides whether a match can start (the same rules start_match checks). */
+export interface MatchStartInput {
+  startsAt: Date;
+  durationMinutes: number;
+  /** When a player tapped Start Match, or null. */
+  startedAt: Date | null;
+  youCheckedIn: boolean;
+  opponentReady: boolean;
+}
+
+/**
+ * When Start Match becomes possible: when check-in opens,
+ * CHECK_IN_OPENS_MINUTES_BEFORE the start.
+ */
+export function getStartOpensAt(startsAt: Date): Date {
+  return new Date(startsAt.getTime() - CHECK_IN_OPENS_MINUTES_BEFORE * MINUTE_MS);
+}
+
+/**
+ * True when Start Match is allowed right now: not started yet, both players
+ * checked in, and check-in is open (from CHECK_IN_OPENS_MINUTES_BEFORE the
+ * start until the scheduled end, which itself is closed). The server checks
+ * the same rules (start_match) plus "no other match in progress".
+ */
+export function canStartMatch(match: MatchStartInput, now: Date): boolean {
+  const end = match.startsAt.getTime() + match.durationMinutes * MINUTE_MS;
+  return (
+    match.startedAt === null &&
+    match.youCheckedIn &&
+    match.opponentReady &&
+    now.getTime() >= getStartOpensAt(match.startsAt).getTime() &&
+    now.getTime() < end
+  );
+}
+
 /**
  * The main button on the match check-in screen:
  *   - 'check_in': CHECK IN AT MEETING COURT
  *   - 'waiting_for_opponent': greyed WAITING FOR <NAME>
- *   - 'waiting_for_start': both here, but report_result rejects reports
- *     before the start, so a greyed STARTS AT <TIME>
- *   - 'start_match': START MATCH (ranked), which opens the result screen
+ *   - 'waiting_for_start': both here, but it's before check-in opens, so a
+ *     greyed CAN START AT <TIME>
+ *   - 'start_match': START MATCH (ranked; canStartMatch)
  *   - 'casual_ready': both here for a casual match; no button, since casual
  *     results aren't recorded
- *   - 'report_result': the match is over and no one reported yet; REPORT
- *     RESULT until REPORT_WINDOW_HOURS after the end (no check-in needed)
+ *   - 'report_result': the match was started and no one reported yet; REPORT
+ *     RESULT until REPORT_WINDOW_HOURS after the scheduled end
  *   - 'view_result': someone already reported; opens the result screen
- *   - 'none': nothing left to do
+ *   - 'none': nothing left to do (including a match nobody started that has
+ *     reached its scheduled end)
  */
 export type MatchAction =
   | 'check_in'
@@ -76,28 +115,29 @@ export type MatchAction =
   | 'view_result'
   | 'none';
 
-export interface MatchActionInput {
+export interface MatchActionInput extends MatchStartInput {
   ranked: boolean;
   hasResult: boolean;
-  startsAt: Date;
-  durationMinutes: number;
-  youCheckedIn: boolean;
-  opponentReady: boolean;
 }
 
-/** Which main button the match check-in screen shows right now. */
+/**
+ * Which main button the match check-in screen shows right now. Whether the
+ * match is under way comes from startedAt, not the clock: an early start
+ * shows REPORT RESULT before the scheduled time, and a match nobody started
+ * has nothing to report.
+ */
 export function getMatchAction(match: MatchActionInput, now: Date): MatchAction {
-  const start = match.startsAt.getTime();
-  const end = start + match.durationMinutes * 60 * 1000;
+  const end = match.startsAt.getTime() + match.durationMinutes * MINUTE_MS;
   if (match.ranked && match.hasResult) return 'view_result';
-  if (now.getTime() >= end) {
+  if (match.startedAt !== null) {
     const reportOpen = now.getTime() <= end + REPORT_WINDOW_HOURS * HOUR_MS;
     return match.ranked && reportOpen ? 'report_result' : 'none';
   }
+  if (now.getTime() >= end) return 'none';
   if (!match.youCheckedIn) return 'check_in';
   if (!match.opponentReady) return 'waiting_for_opponent';
   if (!match.ranked) return 'casual_ready';
-  if (now.getTime() < start) return 'waiting_for_start';
+  if (!canStartMatch(match, now)) return 'waiting_for_start';
   return 'start_match';
 }
 

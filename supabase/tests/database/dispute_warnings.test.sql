@@ -93,6 +93,8 @@ values (
   60,
   'confirmed'
 );
+-- report_result needs a started match.
+update public.challenges set started_at = starts_at where challenge_id = 3001;
 
 -- ---------------------------------------------------------
 -- Schema checks

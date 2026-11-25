@@ -97,7 +97,8 @@ export function ChallengeDetailsScreen({navigation, route}: SearchScreenProps<'C
       if (
         isServiceError(e, 'challenge_expired') ||
         isServiceError(e, 'challenge_already_answered') ||
-        isServiceError(e, 'match_ended')
+        isServiceError(e, 'match_ended') ||
+        isServiceError(e, 'match_already_started')
       ) {
         load();
       }
